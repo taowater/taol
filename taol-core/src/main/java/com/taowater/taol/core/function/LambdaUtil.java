@@ -1,6 +1,6 @@
-package io.github.taowater.core.function;
+package com.taowater.taol.core.function;
 
-import io.github.taowater.core.reflect.ClassUtil;
+import com.taowater.taol.core.reflect.ClassUtil;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.var;

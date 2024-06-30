@@ -1,5 +1,6 @@
-package io.github.taowater.core.reflect;
+package com.taowater.core.reflect;
 
+import com.taowater.taol.core.reflect.ClassUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

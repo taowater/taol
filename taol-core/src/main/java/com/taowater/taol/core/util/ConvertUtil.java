@@ -1,4 +1,4 @@
-package io.github.taowater.core.util;
+package com.taowater.taol.core.util;
 
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;

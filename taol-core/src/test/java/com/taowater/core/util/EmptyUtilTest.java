@@ -1,5 +1,6 @@
-package io.github.taowater.core.util;
+package com.taowater.core.util;
 
+import com.taowater.taol.core.util.EmptyUtil;
 import org.dromara.hutool.core.collection.ListUtil;
 import org.dromara.hutool.core.map.MapUtil;
 import org.junit.jupiter.api.Test;

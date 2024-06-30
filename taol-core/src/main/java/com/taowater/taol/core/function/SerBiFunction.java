@@ -1,4 +1,4 @@
-package io.github.taowater.core.function;
+package com.taowater.taol.core.function;
 
 import java.io.Serializable;
 import java.util.function.BiFunction;

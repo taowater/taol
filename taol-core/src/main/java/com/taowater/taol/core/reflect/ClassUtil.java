@@ -1,6 +1,6 @@
-package io.github.taowater.core.reflect;
+package com.taowater.taol.core.reflect;
 
-import io.github.taowater.core.util.EmptyUtil;
+import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 import org.dromara.hutool.core.array.ArrayUtil;
 import org.dromara.hutool.core.reflect.TypeUtil;
