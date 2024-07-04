@@ -9,6 +9,7 @@ target/
 # Log file
 *.log
 *.iml
+.flattened-pom.xml
 
 # BlueJ files
 *.ctxt
