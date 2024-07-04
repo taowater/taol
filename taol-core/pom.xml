@@ -10,17 +10,13 @@
     </parent>
 
     <artifactId>taol-core</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
     <packaging>jar</packaging>
     <description>工具库核心</description>
     <dependencies>
         <dependency>
             <groupId>org.dromara.hutool</groupId>
             <artifactId>hutool-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>cglib</groupId>
-            <artifactId>cglib</artifactId>
         </dependency>
     </dependencies>
 </project>

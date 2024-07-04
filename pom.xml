@@ -31,17 +31,11 @@
 
         <lombok.version>1.18.32</lombok.version>
         <junit.version>5.11.0-M2</junit.version>
-        <cglib.version>3.3.0</cglib.version>
         <hutoo.version>6.0.0-M13</hutoo.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>cglib</groupId>
-                <artifactId>cglib</artifactId>
-                <version>${cglib.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.dromara.hutool</groupId>
                 <artifactId>hutool-core</artifactId>
