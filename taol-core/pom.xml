@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>org.dromara.hutool</groupId>
-            <artifactId>hutool-core</artifactId>
+            <artifactId>hutool-all</artifactId>
         </dependency>
     </dependencies>
 </project>
