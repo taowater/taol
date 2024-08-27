@@ -2,12 +2,8 @@ package com.taowater.taol.core.reflect;
 
 import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
-import org.dromara.hutool.core.array.ArrayUtil;
-import org.dromara.hutool.core.reflect.TypeUtil;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -32,7 +28,7 @@ public class ClassUtil {
         return Optional.of(clazz)
                 .map(Class::getGenericSuperclass)
                 .map(ClassUtil::getActualTypeArguments)
-                .map(a -> (Class<N>) ArrayUtil.get(a, index))
+                .map(a -> (Class<N>) a[index])
                 .orElse(null);
     }
 
@@ -51,10 +47,10 @@ public class ClassUtil {
         }
 
         return Stream.of(clazz.getGenericInterfaces())
-                .filter(e -> interfaceClazz.isAssignableFrom(TypeUtil.getClass(((ParameterizedType) e).getRawType())))
+                .filter(e -> interfaceClazz.isAssignableFrom(ClassUtil.getClass(((ParameterizedType) e).getRawType())))
                 .findFirst()
                 .map(ClassUtil::getActualTypeArguments)
-                .map(a -> (Class<N>) ArrayUtil.get(a, index))
+                .map(a -> (Class<N>) a[index])
                 .orElse(null);
     }
 
@@ -106,5 +102,29 @@ public class ClassUtil {
         } catch (ClassNotFoundException e) {
             return null;
         }
+    }
+
+    public static Class<?> getClass(final Type type) {
+        if (type == null) {
+            return null;
+        }
+        if (type instanceof Class) {
+            return (Class<?>) type;
+        }
+        if (type instanceof ParameterizedType) {
+            return (Class<?>) ((ParameterizedType) type).getRawType();
+        }
+        if (type instanceof TypeVariable) {
+            final Type[] bounds = ((TypeVariable<?>) type).getBounds();
+            if (bounds.length == 1) {
+                return getClass(bounds[0]);
+            }
+        } else if (type instanceof WildcardType) {
+            final Type[] upperBounds = ((WildcardType) type).getUpperBounds();
+            if (upperBounds.length == 1) {
+                return getClass(upperBounds[0]);
+            }
+        }
+        return null;
     }
 }

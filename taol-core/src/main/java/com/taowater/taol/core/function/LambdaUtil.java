@@ -1,10 +1,12 @@
 package com.taowater.taol.core.function;
 
 import com.taowater.taol.core.reflect.ClassUtil;
+import io.vavr.Function0;
+import io.vavr.Function1;
+import io.vavr.Function2;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.var;
-import org.dromara.hutool.core.reflect.method.MethodUtil;
 
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
@@ -47,7 +49,15 @@ public class LambdaUtil {
      */
     @SneakyThrows
     public <S extends Serializable> SerializedLambda getSerializedLambda(S fun) {
-        return CACHE.computeIfAbsent(fun.getClass().getName(), c -> MethodUtil.invoke(fun, "writeReplace"));
+        return CACHE.computeIfAbsent(fun.getClass().getName(), c -> {
+            try {
+                var method = fun.getClass().getDeclaredMethod("writeReplace");
+                method.setAccessible(true);
+                return (SerializedLambda) method.invoke(fun);
+            } catch (Exception e) {
+                return null;
+            }
+        });
     }
 
     /**
@@ -56,12 +66,12 @@ public class LambdaUtil {
      * @param fun 有趣
      * @return {@link Class}<{@link R}>
      */
-    public <T, R> Class<R> getReturnClass(SerFunction<T, R> fun) {
+    public <T, R> Class<R> getReturnClass(Function1<T, R> fun) {
         SerializedLambda lambda = getSerializedLambda(fun);
         return (Class<R>) getReturnClass(lambda);
     }
 
-    public static <T, U, R> Class<R> getReturnClass(SerBiFunction<T, U, R> fun) {
+    public static <T, U, R> Class<R> getReturnClass(Function2<T, U, R> fun) {
         SerializedLambda lambda = getSerializedLambda(fun);
         return (Class<R>) getReturnClass(lambda);
     }
@@ -76,7 +86,7 @@ public class LambdaUtil {
     }
 
     @SneakyThrows
-    public static <T> Class<T> getReturnClass(SerSupplier<T> fun) {
+    public static <T> Class<T> getReturnClass(Function0<T> fun) {
         SerializedLambda lambda = getSerializedLambda(fun);
         return (Class<T>) getReturnClass(lambda);
     }
@@ -88,7 +98,7 @@ public class LambdaUtil {
      * @return {@link List}<{@link Class}<{@link ?}>>
      */
     @SneakyThrows
-    public <T, R> List<Class<?>> getParameterTypes(SerFunction<T, R> fun) {
+    public <T, R> List<Class<?>> getParameterTypes(Function1<T, R> fun) {
         SerializedLambda lambda = getSerializedLambda(fun);
         String expr = lambda.getInstantiatedMethodType();
         Matcher matcher = PARAMETER_TYPE_PATTERN.matcher(expr);
@@ -109,7 +119,7 @@ public class LambdaUtil {
      * @return {@link List}<{@link Class}<{@link ?}>>
      */
     @SneakyThrows
-    public <T, R> Class<?> getParameterTypes(SerFunction<T, R> fun, int index) {
+    public <T, R> Class<?> getParameterTypes(Function1<T, R> fun, int index) {
         var list = getParameterTypes(fun);
         return list.get(index);
     }

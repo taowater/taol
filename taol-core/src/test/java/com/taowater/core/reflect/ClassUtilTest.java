@@ -23,7 +23,13 @@ class ClassUtilTest {
         }
     }
 
-    static class ClassA implements InterfaceA<Integer>, InterfaceB<String, Double> {
+    interface InterfaceC<T, T2> extends InterfaceA<T> {
+        default Class<T> getAType() {
+            return ClassUtil.getInterfaceGenericType(this.getClass(), InterfaceA.class, 0);
+        }
+    }
+
+    static class ClassA implements InterfaceC<Integer, Boolean>, InterfaceB<String, Double> {
 
     }
 
@@ -35,6 +41,7 @@ class ClassUtilTest {
     void testInterfaceGenericType() {
         ClassA a = new ClassA();
         ClassB b = new ClassB();
+
         assertEquals(a.getAType(), Integer.class);
         assertEquals(a.getBType(), String.class);
         assertEquals(a.getB2Type(), Double.class);

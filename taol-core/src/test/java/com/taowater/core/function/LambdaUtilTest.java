@@ -1,7 +1,7 @@
 package com.taowater.core.function;
 
 import com.taowater.taol.core.function.LambdaUtil;
-import com.taowater.taol.core.function.SerFunction;
+import io.vavr.Function1;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -13,7 +13,7 @@ class LambdaUtilTest {
 
     @Test
     void testReturnClass() {
-        SerFunction<String, String> fun = s -> s + "123";
+        Function1<String, String> fun = s -> s + "123";
         assertEquals(LambdaUtil.getReturnClass(a -> "234"), String.class);
         assertEquals(LambdaUtil.getReturnClass((a, b) -> "234"), String.class);
         assertEquals(LambdaUtil.getReturnClass(() -> new Date()), Date.class);
@@ -27,7 +27,8 @@ class LambdaUtilTest {
 
     @Test
     void getParameterTypes() {
-        SerFunction<String, String> fun = s -> s + "123";
+        Function1<String, String> fun = s -> s + "123";
+//        SerFunction<String, String> fun2 = s -> s + "123";
         assertEquals(LambdaUtil.getParameterTypes(fun, 0), String.class);
         assertEquals(LambdaUtil.getParameterTypes(LambdaUtilTest::fun2, 0), BigDecimal.class);
     }

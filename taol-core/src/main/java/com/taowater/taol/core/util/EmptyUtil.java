@@ -1,13 +1,12 @@
 package com.taowater.taol.core.util;
 
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import lombok.experimental.UtilityClass;
 import org.dromara.hutool.core.map.MapUtil;
 
 import java.lang.reflect.Array;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -19,6 +18,20 @@ import java.util.stream.Stream;
  */
 @UtilityClass
 public class EmptyUtil {
+
+    private final List<Tuple2<Predicate<Object>, Predicate<Object>>> STRATEGY = new ArrayList<>();
+
+    static {
+        Collections.addAll(STRATEGY,
+                Tuple.of(Objects::isNull, o -> true),
+                Tuple.of(CharSequence.class::isInstance, o -> ((CharSequence) o).length() == 0),
+                Tuple.of(Iterator.class::isInstance, o -> !((Iterator<?>) o).hasNext()),
+                Tuple.of(Iterable.class::isInstance, o -> EmptyUtil.isEmpty(((Iterable<?>) o).iterator())),
+                Tuple.of(Map.class::isInstance, o -> ((Map<?, ?>) o).isEmpty()),
+                Tuple.of(o -> o.getClass().isArray(), o -> Array.getLength(o) == 0),
+                Tuple.of(o -> true, o -> false)
+        );
+    }
 
     /**
      * 情形与判断方法的映射map
@@ -41,11 +54,11 @@ public class EmptyUtil {
      * @return 判断结果
      */
     public boolean isEmpty(Object obj) {
-        return STRATEGY_MAP.entrySet()
+        return STRATEGY
                 .stream()
-                .filter(e -> e.getKey().test(obj))
+                .filter(e -> e._1.test(obj))
                 .findFirst()
-                .map(Map.Entry::getValue)
+                .map(Tuple2::_2)
                 .map(e -> e.test(obj))
                 .orElse(false);
     }

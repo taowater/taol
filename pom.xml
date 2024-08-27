@@ -22,7 +22,7 @@
     </modules>
 
     <properties>
-        <revision>0.0.4</revision>
+        <revision>0.0.5</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>8</java.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -41,6 +41,11 @@
             <dependency>
                 <groupId>org.dromara.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
+                <version>${hutoo.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.dromara.hutool</groupId>
+                <artifactId>hutool-core</artifactId>
                 <version>${hutoo.version}</version>
             </dependency>
         </dependencies>
