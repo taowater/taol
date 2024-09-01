@@ -3,7 +3,6 @@ package com.taowater.taol.core.util;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import lombok.experimental.UtilityClass;
-import org.dromara.hutool.core.map.MapUtil;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -32,20 +31,6 @@ public class EmptyUtil {
                 Tuple.of(o -> true, o -> false)
         );
     }
-
-    /**
-     * 情形与判断方法的映射map
-     */
-    private final Map<Predicate<Object>, Predicate<Object>> STRATEGY_MAP = MapUtil
-            .builder(new LinkedHashMap<Predicate<Object>, Predicate<Object>>())
-            .put(Objects::isNull, o -> true)
-            .put(CharSequence.class::isInstance, o -> ((CharSequence) o).length() == 0)
-            .put(Iterator.class::isInstance, o -> !((Iterator<?>) o).hasNext())
-            .put(Iterable.class::isInstance, o -> EmptyUtil.isEmpty(((Iterable<?>) o).iterator()))
-            .put(Map.class::isInstance, o -> ((Map<?, ?>) o).isEmpty())
-            .put(o -> o.getClass().isArray(), o -> Array.getLength(o) == 0)
-            .put(o -> true, o -> false)
-            .build();
 
     /**
      * 判断任意对象是否为空
