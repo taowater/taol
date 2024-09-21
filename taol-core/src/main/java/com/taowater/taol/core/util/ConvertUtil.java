@@ -1,8 +1,12 @@
 package com.taowater.taol.core.util;
 
+import com.taowater.taol.core.reflect.ClassUtil;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.dromara.hutool.core.bean.BeanUtil;
+import org.springframework.beans.BeanUtils;
+
+import java.util.Objects;
 
 /**
  * 转换工具
@@ -12,6 +16,8 @@ import org.dromara.hutool.core.bean.BeanUtil;
  */
 @UtilityClass
 public class ConvertUtil {
+
+    private final boolean hadSpringBeanUtils = Objects.nonNull(ClassUtil.fromName("org.springframework.beans.BeanUtils"));
 
     /**
      * 转换
@@ -35,7 +41,11 @@ public class ConvertUtil {
      * @param target 目标
      */
     public <S, T> void copy(S source, T target) {
-        BeanUtil.copyProperties(source, target, false);
+        if (hadSpringBeanUtils) {
+            BeanUtils.copyProperties(source, target);
+        } else {
+            BeanUtil.copyProperties(source, target, false);
+        }
     }
 
 }
