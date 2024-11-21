@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 @UtilityClass
 public class EmptyUtil {
 
-    private final List<Tuple2<Predicate<Object>, Predicate<Object>>> STRATEGY = new ArrayList<>();
+    private static final List<Tuple2<Predicate<Object>, Predicate<Object>>> STRATEGY = new ArrayList<>();
 
     static {
         Collections.addAll(STRATEGY,

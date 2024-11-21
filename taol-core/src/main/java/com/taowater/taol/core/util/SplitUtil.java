@@ -2,10 +2,7 @@ package com.taowater.taol.core.util;
 
 import lombok.experimental.UtilityClass;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,7 +69,7 @@ public class SplitUtil {
      */
     public static <T> List<T> split(Object obj, String delimiter, Function<String, T> action, boolean distinct) {
         String str = Optional.ofNullable(obj).filter(e -> EmptyUtil.isNotEmpty(obj)).map(String::valueOf).orElse(null);
-        if (EmptyUtil.isEmpty(str)) {
+        if (Objects.isNull(str)) {
             return new ArrayList<>();
         }
         Stream<T> ztream = Arrays.stream(str.split(delimiter)).filter(EmptyUtil::isNotEmpty).map(String::trim).map(action);
