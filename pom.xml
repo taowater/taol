@@ -22,7 +22,7 @@
     </modules>
 
     <properties>
-        <revision>0.0.7</revision>
+        <revision>0.0.8</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>8</java.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -31,23 +31,22 @@
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
         <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
 
-        <lombok.version>1.18.34</lombok.version>
-        <junit.version>5.11.0-M2</junit.version>
-        <hutoo.version>6.0.0-M18</hutoo.version>
+        <lombok.version>1.18.36</lombok.version>
+        <junit.version>5.11.4</junit.version>
         <vavr.version>0.10.5</vavr.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.dromara.hutool</groupId>
-                <artifactId>hutool-core</artifactId>
-                <version>${hutoo.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.vavr</groupId>
                 <artifactId>vavr</artifactId>
                 <version>${vavr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.yangtu222</groupId>
+                <artifactId>BeanUtils</artifactId>
+                <version>1.0.11</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
