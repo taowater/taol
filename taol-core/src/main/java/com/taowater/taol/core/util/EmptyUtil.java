@@ -107,4 +107,24 @@ public class EmptyUtil {
     public boolean isHadBoth(Object... objs) {
         return isHadEmpty(objs) && isHadNotEmpty(objs);
     }
+
+    /**
+     * 是否为空白串
+     *
+     * @param str 字符串
+     * @return boolean
+     */
+    public boolean isBlank(CharSequence str) {
+        return isEmpty(str) || str.toString().trim().isEmpty();
+    }
+
+    /**
+     * 是否为非空白串
+     *
+     * @param str 字符串
+     * @return boolean
+     */
+    public boolean isNotBlank(CharSequence str) {
+        return !isBlank(str);
+    }
 }
