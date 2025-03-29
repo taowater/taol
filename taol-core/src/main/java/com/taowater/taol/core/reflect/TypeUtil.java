@@ -17,11 +17,22 @@ public class TypeUtil {
      *
      * @param type        类型
      * @param genericType 泛型类型
-     * @param index       泛型参数下表
+     * @return {@link Type }
+     */
+    public static Type getTypeArgument(Type type, Class<?> genericType) {
+        return getTypeArgument(type, genericType, 0);
+    }
+
+    /**
+     * 获取某个类继承树上的某个祖先类的泛型类型
+     *
+     * @param type        类型
+     * @param genericType 泛型类型
+     * @param index       泛型参数下标记
      * @return {@link Type }
      */
     public static Type getTypeArgument(Type type, Class<?> genericType, int index) {
-        final Type[] typeArguments = getTypeArguments(type, genericType);
+        Type[] typeArguments = getTypeArguments(type, genericType);
         if (null == typeArguments || typeArguments.length <= index) {
             return null;
         }
