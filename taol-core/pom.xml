@@ -20,11 +20,6 @@
             <artifactId>vavr</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.dromara.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>6.0.0-M20</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.yangtu222</groupId>
             <artifactId>BeanUtils</artifactId>
         </dependency>
