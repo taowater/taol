@@ -12,8 +12,16 @@ import java.util.stream.Stream;
 @UtilityClass
 public class TypeUtil {
 
-    public static Type getTypeArgument(Type type, Class<?> interfaceType, int index) {
-        final Type[] typeArguments = getTypeArguments(type, interfaceType);
+    /**
+     * 获取某个类继承树上的某个祖先类的泛型类型
+     *
+     * @param type        类型
+     * @param genericType 泛型类型
+     * @param index       泛型参数下表
+     * @return {@link Type }
+     */
+    public static Type getTypeArgument(Type type, Class<?> genericType, int index) {
+        final Type[] typeArguments = getTypeArguments(type, genericType);
         if (null == typeArguments || typeArguments.length <= index) {
             return null;
         }
@@ -21,22 +29,42 @@ public class TypeUtil {
     }
 
 
-    public static Type[] getTypeArguments(Type type, Class<?> interfaceType) {
-        if (null == type || null == interfaceType) {
+    /**
+     * 获取某个类继承树上的某个祖先类的泛型类型列表
+     *
+     * @param type        类型
+     * @param genericType 泛型类型
+     * @return {@link Type[] }
+     */
+    public static Type[] getTypeArguments(Type type, Class<?> genericType) {
+        if (null == type || null == genericType) {
             return null;
         }
-        ParameterizedType parameterizedType = toParameterizedType(type, interfaceType);
+        ParameterizedType parameterizedType = toParameterizedType(type, genericType);
         return Optional.ofNullable(parameterizedType).map(ParameterizedType::getActualTypeArguments).orElse(null);
     }
 
-    public static ParameterizedType toParameterizedType(Type type, Class<?> interfaceType) {
+    /**
+     * 获取某个类继承树上的某个祖先类的参数化类型
+     *
+     * @param type        类型
+     * @param genericType 泛型类型
+     * @return {@link ParameterizedType }
+     */
+    public static ParameterizedType toParameterizedType(Type type, Class<?> genericType) {
         Map<Class<?>, ParameterizedType> map = mapGenerics((Class<?>) type);
         if (EmptyUtil.isEmpty(map)) {
             return null;
         }
-        return map.get(interfaceType);
+        return map.get(genericType);
     }
 
+    /**
+     * 递归获取某个类继承树上的所有类型和参数类型的映射
+     *
+     * @param clazz 克拉兹
+     * @return {@link Map }<{@link Class }<{@link ? }>, {@link ParameterizedType }>
+     */
     public static Map<Class<?>, ParameterizedType> mapGenerics(Class<?> clazz) {
         Map<Class<?>, ParameterizedType> result = new HashMap<>();
         // 继承的父类
@@ -58,6 +86,12 @@ public class TypeUtil {
         return result;
     }
 
+    /**
+     * 获取某个类型本身的参数化类型信息
+     *
+     * @param type 类型
+     * @return {@link Map }<{@link Class }<{@link ? }>, {@link ParameterizedType }>
+     */
     private Map<Class<?>, ParameterizedType> getGenerics(Type type) {
         Map<Class<?>, ParameterizedType> result = new HashMap<>();
         Map<Class<?>, ParameterizedType> map;
@@ -102,7 +136,7 @@ public class TypeUtil {
 
 
     /**
-     * 获取实数类型
+     * 获取实际类型
      *
      * @param type       类型
      * @param typeParams 类型参数
