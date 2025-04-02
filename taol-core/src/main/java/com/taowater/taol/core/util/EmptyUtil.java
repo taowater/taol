@@ -2,6 +2,7 @@ package com.taowater.taol.core.util;
 
 
 import com.taowater.taol.core.bo.Tuple;
+import com.taowater.taol.core.function.Emptyable;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
@@ -22,13 +23,12 @@ public class EmptyUtil {
 
     static {
         Collections.addAll(STRATEGY,
-                Tuple.of(Objects::isNull, o -> true),
+                Tuple.of(Emptyable.class::isInstance, o -> ((Emptyable) o).isEmpty()),
                 Tuple.of(CharSequence.class::isInstance, o -> ((CharSequence) o).length() == 0),
                 Tuple.of(Iterator.class::isInstance, o -> !((Iterator<?>) o).hasNext()),
                 Tuple.of(Iterable.class::isInstance, o -> EmptyUtil.isEmpty(((Iterable<?>) o).iterator())),
                 Tuple.of(Map.class::isInstance, o -> ((Map<?, ?>) o).isEmpty()),
-                Tuple.of(o -> o.getClass().isArray(), o -> Array.getLength(o) == 0),
-                Tuple.of(o -> true, o -> false)
+                Tuple.of(o -> o.getClass().isArray(), o -> Array.getLength(o) == 0)
         );
     }
 
@@ -39,6 +39,9 @@ public class EmptyUtil {
      * @return 判断结果
      */
     public static boolean isEmpty(Object obj) {
+        if (Objects.isNull(obj)) {
+            return true;
+        }
         return STRATEGY
                 .stream()
                 .filter(e -> e.getLeft().test(obj))
