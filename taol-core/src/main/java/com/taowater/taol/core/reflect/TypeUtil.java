@@ -96,7 +96,7 @@ public class TypeUtil {
      * @param type 类型
      * @return {@link Map }<{@link Class }<{@link ? }>, {@link ParameterizedType }>
      */
-    private Map<Class<?>, ParameterizedType> getGenerics(Type type) {
+    private static Map<Class<?>, ParameterizedType> getGenerics(Type type) {
         Map<Class<?>, ParameterizedType> result = new HashMap<>();
         Map<Class<?>, ParameterizedType> map;
         if (type instanceof Class<?>) {
@@ -111,9 +111,7 @@ public class TypeUtil {
             result.put(rawType, parameterizedInter);
             map = mapGenerics(rawType);
             if (EmptyUtil.isNotEmpty(map)) {
-                map.forEach((k, v) -> {
-                    result.put(k, getRealParameterizedType(parameterizedInter, v));
-                });
+                map.forEach((k, v) -> result.put(k, getRealParameterizedType(parameterizedInter, v)));
             }
         }
         return result;

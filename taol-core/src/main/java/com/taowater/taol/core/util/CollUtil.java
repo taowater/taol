@@ -1,5 +1,7 @@
 package com.taowater.taol.core.util;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -7,7 +9,9 @@ import java.util.List;
 /**
  * 集合相关工具
  */
+@UtilityClass
 public class CollUtil {
+    
     public static <T> T get(final Collection<T> collection, int index) {
         if (EmptyUtil.isEmpty(collection)) {
             return null;

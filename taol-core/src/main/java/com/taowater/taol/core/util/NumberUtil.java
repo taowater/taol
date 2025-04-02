@@ -39,7 +39,7 @@ public class NumberUtil {
      * @return {@link N}
      */
     @SuppressWarnings("unchecked")
-    public <N extends Number> N getValue(BigDecimal bigDecimal, Function1<?, ? extends N> function) {
+    public static <N extends Number> N getValue(BigDecimal bigDecimal, Function1<?, ? extends N> function) {
         if (EmptyUtil.isHadEmpty(bigDecimal, function)) {
             return null;
         }

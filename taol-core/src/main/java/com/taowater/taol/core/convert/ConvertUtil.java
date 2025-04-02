@@ -13,7 +13,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class ConvertUtil {
 
-
     /**
      * 转换
      *
@@ -21,7 +20,7 @@ public class ConvertUtil {
      * @param tClazz t clazz
      * @return {@link T}
      */
-    public <S, T> T convert(S source, Class<T> tClazz) {
+    public static <S, T> T convert(S source, Class<T> tClazz) {
         return BeanCopyUtils.copyBean(source, tClazz);
     }
 
@@ -31,7 +30,7 @@ public class ConvertUtil {
      * @param source 源
      * @param target 目标
      */
-    public <S, T> void copy(S source, T target) {
+    public static <S, T> void copy(S source, T target) {
         BeanCopyUtils.copyBean(source, target);
     }
 

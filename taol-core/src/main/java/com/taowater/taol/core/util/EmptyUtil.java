@@ -1,5 +1,7 @@
 package com.taowater.taol.core.util;
 
+
+import com.taowater.taol.core.bo.Tuple;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
@@ -36,7 +38,7 @@ public class EmptyUtil {
      * @param obj 任意对象
      * @return 判断结果
      */
-    public boolean isEmpty(Object obj) {
+    public static boolean isEmpty(Object obj) {
         return STRATEGY
                 .stream()
                 .filter(e -> e.getLeft().test(obj))
@@ -52,7 +54,7 @@ public class EmptyUtil {
      * @param obj 任意对象
      * @return 判断结果
      */
-    public boolean isNotEmpty(Object obj) {
+    public static boolean isNotEmpty(Object obj) {
         return !isEmpty(obj);
     }
 
@@ -62,7 +64,7 @@ public class EmptyUtil {
      * @param objs 若干个对象
      * @return 判断结果
      */
-    public boolean isHadEmpty(Object... objs) {
+    public static boolean isHadEmpty(Object... objs) {
         return Stream.of(objs).anyMatch(EmptyUtil::isEmpty);
     }
 
@@ -72,7 +74,7 @@ public class EmptyUtil {
      * @param objs 若干个对象
      * @return 判断结果
      */
-    public boolean isHadNotEmpty(Object... objs) {
+    public static boolean isHadNotEmpty(Object... objs) {
         return Stream.of(objs).anyMatch(EmptyUtil::isNotEmpty);
     }
 
@@ -82,7 +84,7 @@ public class EmptyUtil {
      * @param objs 若干个对象
      * @return 判断结果
      */
-    public boolean isAllEmpty(Object... objs) {
+    public static boolean isAllEmpty(Object... objs) {
         return !isHadNotEmpty(objs);
     }
 
@@ -92,7 +94,7 @@ public class EmptyUtil {
      * @param objs 若干个对象
      * @return 判断结果
      */
-    public boolean isAllNotEmpty(Object... objs) {
+    public static boolean isAllNotEmpty(Object... objs) {
         return !isHadEmpty(objs);
     }
 
@@ -102,7 +104,7 @@ public class EmptyUtil {
      * @param objs 若干个对象
      * @return 判断结果
      */
-    public boolean isHadBoth(Object... objs) {
+    public static boolean isHadBoth(Object... objs) {
         return isHadEmpty(objs) && isHadNotEmpty(objs);
     }
 
@@ -112,7 +114,7 @@ public class EmptyUtil {
      * @param str 字符串
      * @return boolean
      */
-    public boolean isBlank(CharSequence str) {
+    public static boolean isBlank(CharSequence str) {
         return isEmpty(str) || str.toString().trim().isEmpty();
     }
 
@@ -122,7 +124,7 @@ public class EmptyUtil {
      * @param str 字符串
      * @return boolean
      */
-    public boolean isNotBlank(CharSequence str) {
+    public static boolean isNotBlank(CharSequence str) {
         return !isBlank(str);
     }
 }

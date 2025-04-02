@@ -21,7 +21,7 @@ public class ClassUtil {
      * @param clazz clazz
      * @return {@link T}
      */
-    public <T> T newInstance(Class<T> clazz) {
+    public static <T> T newInstance(Class<T> clazz) {
         return Optional.of(clazz).map(c -> {
             try {
                 return c.getConstructor();
@@ -43,11 +43,11 @@ public class ClassUtil {
      * @param clazz clazz
      * @return {@link String}
      */
-    public String getSlashName(Class<?> clazz) {
+    public static String getSlashName(Class<?> clazz) {
         return clazz.getName().replaceAll("\\.", "/");
     }
 
-    public Class<?> fromName(String name) {
+    public static Class<?> fromName(String name) {
         try {
             return Class.forName(name);
         } catch (ClassNotFoundException e) {

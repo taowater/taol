@@ -1,4 +1,4 @@
-package com.taowater.taol.core.util;
+package com.taowater.taol.core.bo;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
