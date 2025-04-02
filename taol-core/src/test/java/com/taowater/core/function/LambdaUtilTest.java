@@ -1,7 +1,7 @@
 package com.taowater.core.function;
 
+import com.taowater.taol.core.function.Function1;
 import com.taowater.taol.core.function.LambdaUtil;
-import io.vavr.Function1;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

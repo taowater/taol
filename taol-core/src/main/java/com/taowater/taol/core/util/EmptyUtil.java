@@ -1,7 +1,5 @@
 package com.taowater.taol.core.util;
 
-import io.vavr.Tuple;
-import io.vavr.Tuple2;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
@@ -18,7 +16,7 @@ import java.util.stream.Stream;
 @UtilityClass
 public class EmptyUtil {
 
-    private static final List<Tuple2<Predicate<Object>, Predicate<Object>>> STRATEGY = new ArrayList<>();
+    private static final List<Tuple<Predicate<Object>, Predicate<Object>>> STRATEGY = new ArrayList<>();
 
     static {
         Collections.addAll(STRATEGY,
@@ -41,9 +39,9 @@ public class EmptyUtil {
     public boolean isEmpty(Object obj) {
         return STRATEGY
                 .stream()
-                .filter(e -> e._1.test(obj))
+                .filter(e -> e.getLeft().test(obj))
                 .findFirst()
-                .map(Tuple2::_2)
+                .map(Tuple::getRight)
                 .map(e -> e.test(obj))
                 .orElse(false);
     }

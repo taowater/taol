@@ -1,9 +1,6 @@
 package com.taowater.taol.core.function;
 
 import com.taowater.taol.core.reflect.ClassUtil;
-import io.vavr.Function0;
-import io.vavr.Function1;
-import io.vavr.Function2;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.var;

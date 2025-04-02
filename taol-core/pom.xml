@@ -16,10 +16,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.vavr</groupId>
-            <artifactId>vavr</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.github.yangtu222</groupId>
             <artifactId>BeanUtils</artifactId>
         </dependency>

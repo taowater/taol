@@ -1,5 +1,6 @@
 package com.taowater.taol.core.reflect;
 
+import com.taowater.taol.core.util.CollUtil;
 import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
@@ -32,11 +33,7 @@ public class TypeUtil {
      * @return {@link Type }
      */
     public static Type getTypeArgument(Type type, Class<?> genericType, int index) {
-        Type[] typeArguments = getTypeArguments(type, genericType);
-        if (null == typeArguments || typeArguments.length <= index) {
-            return null;
-        }
-        return typeArguments[index];
+        return CollUtil.get(getTypeArguments(type, genericType), index);
     }
 
 
@@ -48,7 +45,7 @@ public class TypeUtil {
      * @return {@link Type[] }
      */
     public static Type[] getTypeArguments(Type type, Class<?> genericType) {
-        if (null == type || null == genericType) {
+        if (EmptyUtil.isHadEmpty(type, genericType)) {
             return null;
         }
         ParameterizedType parameterizedType = toParameterizedType(type, genericType);
@@ -63,11 +60,7 @@ public class TypeUtil {
      * @return {@link ParameterizedType }
      */
     public static ParameterizedType toParameterizedType(Type type, Class<?> genericType) {
-        Map<Class<?>, ParameterizedType> map = mapGenerics((Class<?>) type);
-        if (EmptyUtil.isEmpty(map)) {
-            return null;
-        }
-        return map.get(genericType);
+        return mapGenerics((Class<?>) type).get(genericType);
     }
 
     /**

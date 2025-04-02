@@ -1,7 +1,7 @@
 package com.taowater.taol.core.util;
 
+import com.taowater.taol.core.function.Function1;
 import com.taowater.taol.core.function.LambdaUtil;
-import io.vavr.Function1;
 import lombok.experimental.UtilityClass;
 
 import java.math.BigDecimal;
