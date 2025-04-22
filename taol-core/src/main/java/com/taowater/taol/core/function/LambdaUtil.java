@@ -70,22 +70,6 @@ public class LambdaUtil {
         });
     }
 
-    /**
-     * 得到返回值的类型
-     *
-     * @param fun 有趣
-     * @return {@link Class}<{@link R}>
-     */
-    public static <T, R> Class<R> getReturnClass(Function1<T, R> fun) {
-        SerializedLambda lambda = getSerializedLambda(fun);
-        return (Class<R>) getReturnClass(lambda);
-    }
-
-    public static <T, U, R> Class<R> getReturnClass(Function2<T, U, R> fun) {
-        SerializedLambda lambda = getSerializedLambda(fun);
-        return (Class<R>) getReturnClass(lambda);
-    }
-
     private static Class<?> getReturnClass(SerializedLambda lambda) {
         String expr = lambda.getInstantiatedMethodType();
         Matcher matcher = RETURN_TYPE_PATTERN.matcher(expr);
@@ -95,10 +79,28 @@ public class LambdaUtil {
         return Optional.of(matcher.group(1)).map(e -> e.replace("/", ".")).map(ClassUtil::fromName).orElse(null);
     }
 
-
-    public static <T> Class<T> getReturnClass(Function0<T> fun) {
+    public static <S extends Serializable> Class<?> getReturnClass(S fun) {
         SerializedLambda lambda = getSerializedLambda(fun);
-        return (Class<T>) getReturnClass(lambda);
+        return getReturnClass(lambda);
+    }
+
+
+    public static <R> Class<R> getReturnClass(Function0<R> fun) {
+        return (Class<R>) LambdaUtil.<Function0<R>>getReturnClass(fun);
+    }
+
+    /**
+     * 得到返回值的类型
+     *
+     * @param fun 有趣
+     * @return {@link Class}<{@link R}>
+     */
+    public static <T, R> Class<R> getReturnClass(Function1<T, R> fun) {
+        return (Class<R>) LambdaUtil.<Function1<T, R>>getReturnClass(fun);
+    }
+
+    public static <T, U, R> Class<R> getReturnClass(Function2<T, U, R> fun) {
+        return (Class<R>) LambdaUtil.<Function2<T, U, R>>getReturnClass(fun);
     }
 
     /**
