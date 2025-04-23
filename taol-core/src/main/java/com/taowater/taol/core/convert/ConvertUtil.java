@@ -9,10 +9,7 @@ import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -27,7 +24,10 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class ConvertUtil {
 
-    private static final Map<String, List<FieldMetadata>> FIELD_INDO_CACHE = new ConcurrentHashMap<>();
+    /**
+     * 类的全限定类名与类的字段信息缓存
+     */
+    private static final Map<String, Set<FieldMetadata>> FIELD_INDO_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 转换
@@ -45,19 +45,19 @@ public class ConvertUtil {
     /**
      * 拷贝
      *
-     * @param source 源
-     * @param target 目标
+     * @param source 源头对象
+     * @param target 目标对象
      */
     @SuppressWarnings("unchecked")
     public static <S, T> void copy(S source, T target) {
         if (EmptyUtil.isHadEmpty(source, target)) {
             return;
         }
-        List<FieldMetadata> sourceFields = getFieldInfos(source.getClass());
+        Set<FieldMetadata> sourceFields = getFieldInfos(source.getClass());
         if (EmptyUtil.isEmpty(sourceFields)) {
             return;
         }
-        List<FieldMetadata> targetFields = getFieldInfos(target.getClass());
+        Set<FieldMetadata> targetFields = getFieldInfos(target.getClass());
         if (EmptyUtil.isEmpty(targetFields)) {
             return;
         }
@@ -84,14 +84,14 @@ public class ConvertUtil {
         });
     }
 
-    private static List<FieldMetadata> getFieldInfos(Class<?> clazz) {
+    private static Set<FieldMetadata> getFieldInfos(Class<?> clazz) {
         if (EmptyUtil.isEmpty(clazz)) {
-            return new ArrayList<>();
+            return new HashSet<>();
         }
         return FIELD_INDO_CACHE.computeIfAbsent(clazz.getName(), k -> {
             List<Field> fields = ReflectUtil.getFields(clazz);
             if (EmptyUtil.isEmpty(fields)) {
-                return new ArrayList<>();
+                return new HashSet<>();
             }
             return fields.stream().map(f -> {
                 FieldMetadata data = new FieldMetadata();
@@ -100,7 +100,7 @@ public class ConvertUtil {
                 data.setGetter(LambdaUtil.buildGetter(clazz, f));
                 data.setSetter(LambdaUtil.buildSetter(clazz, f));
                 return data;
-            }).collect(Collectors.toList());
+            }).collect(Collectors.toSet());
         });
     }
 }

@@ -10,7 +10,13 @@ import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.stream.Stream;
 
+/**
+ * 类型 util
+ *
+ * @author zhu56
+ */
 @UtilityClass
+@SuppressWarnings("unused")
 public class TypeUtil {
 
     /**

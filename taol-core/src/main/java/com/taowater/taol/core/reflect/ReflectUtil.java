@@ -8,6 +8,11 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 反射相关工具类
+ *
+ * @author zhu56
+ */
 @UtilityClass
 public class ReflectUtil {
 
