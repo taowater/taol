@@ -36,6 +36,11 @@ public class LambdaUtil {
     private static final Map<String, SerializedLambda> CACHE = new ConcurrentHashMap<>();
 
     /**
+     * 返回值缓存
+     */
+    private static final Map<Object, Class<?>> RETURN_CACHE = new ConcurrentHashMap<>();
+
+    /**
      * getter 缓存
      */
     private static final Map<String, Function<?, ?>> GETTER_CACHE = new ConcurrentHashMap<>();
@@ -79,9 +84,16 @@ public class LambdaUtil {
         return Optional.of(matcher.group(1)).map(e -> e.replace("/", ".")).map(ClassUtil::fromName).orElse(null);
     }
 
+    /**
+     * 获得方法返回值类型
+     *
+     * @param fun 方法引用
+     */
     public static <S extends Serializable> Class<?> getReturnClass(S fun) {
-        SerializedLambda lambda = getSerializedLambda(fun);
-        return getReturnClass(lambda);
+        return RETURN_CACHE.computeIfAbsent(fun, k -> {
+            SerializedLambda lambda = getSerializedLambda(fun);
+            return getReturnClass(lambda);
+        });
     }
 
 
@@ -92,7 +104,7 @@ public class LambdaUtil {
     /**
      * 得到返回值的类型
      *
-     * @param fun 有趣
+     * @param fun 方法
      * @return {@link Class}<{@link R}>
      */
     public static <T, R> Class<R> getReturnClass(Function1<T, R> fun) {
