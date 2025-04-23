@@ -1,7 +1,6 @@
 package com.taowater.taol.core.convert;
 
 
-import com.taowater.taol.core.bo.Tuple;
 import com.taowater.taol.core.function.LambdaUtil;
 import com.taowater.taol.core.reflect.ClassUtil;
 import com.taowater.taol.core.reflect.ReflectUtil;
@@ -9,6 +8,7 @@ import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class ConvertUtil {
 
-    private static final Map<String, List<Tuple<Function<?, ?>, BiConsumer<?, ?>>>> GS_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, List<FieldMetadata>> FIELD_INDO_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 转换
@@ -52,42 +52,54 @@ public class ConvertUtil {
         if (EmptyUtil.isHadEmpty(source, target)) {
             return;
         }
-        List<Tuple<Function<?, ?>, BiConsumer<?, ?>>> gs = gs((Class<S>) source.getClass(), (Class<T>) target.getClass());
-
-        if (EmptyUtil.isEmpty(gs)) {
+        List<FieldMetadata> sourceFields = getFieldInfos(source.getClass());
+        if (EmptyUtil.isEmpty(sourceFields)) {
             return;
         }
-        assert gs != null;
-        gs.forEach(t -> {
-            Function<S, Object> getter = (Function<S, Object>) t.getLeft();
-            BiConsumer<T, Object> setter = (BiConsumer<T, Object>) t.getRight();
-            Object o = getter.apply(source);
-            if (Objects.nonNull(o)) {
-                setter.accept(target, o);
+        List<FieldMetadata> targetFields = getFieldInfos(target.getClass());
+        if (EmptyUtil.isEmpty(targetFields)) {
+            return;
+        }
+        Map<String, FieldMetadata> map = sourceFields.stream().collect(Collectors.toMap(FieldMetadata::getName, e -> e));
+        targetFields.forEach(field -> {
+            FieldMetadata sourceField = map.get(field.getName());
+            if (Objects.isNull(sourceField)) {
+                return;
             }
+            Class<?> sourceFieldType = sourceField.getType();
+            if (!Objects.equals(sourceFieldType, field.getType())) {
+                return;
+            }
+            Function<S, Object> getter = (Function<S, Object>) sourceField.getGetter();
+            BiConsumer<T, Object> setter = (BiConsumer<T, Object>) field.getSetter();
+            if (EmptyUtil.isHadEmpty(getter, setter)) {
+                return;
+            }
+            Object o = getter.apply(source);
+            if (Objects.isNull(o)) {
+                return;
+            }
+            setter.accept(target, o);
         });
     }
 
-    // todo 缓存
-    private static <S, T> List<Tuple<Function<?, ?>, BiConsumer<?, ?>>> gs(Class<S> sourceClazz, Class<T> targetClazz) {
-        if (EmptyUtil.isHadEmpty(sourceClazz, targetClazz)) {
-            return null;
+    private static List<FieldMetadata> getFieldInfos(Class<?> clazz) {
+        if (EmptyUtil.isEmpty(clazz)) {
+            return new ArrayList<>();
         }
-
-        return GS_CACHE.computeIfAbsent(sourceClazz.getName() + "_" + targetClazz.getName(), k -> {
-            List<Field> targetFields = ReflectUtil.getFields(targetClazz);
-            if (EmptyUtil.isEmpty(targetFields)) {
-                return null;
+        return FIELD_INDO_CACHE.computeIfAbsent(clazz.getName(), k -> {
+            List<Field> fields = ReflectUtil.getFields(clazz);
+            if (EmptyUtil.isEmpty(fields)) {
+                return new ArrayList<>();
             }
-            return targetFields.stream().map(field -> {
-                String fieldName = field.getName();
-                Function<S, Object> getter = LambdaUtil.buildGetter(sourceClazz, field);
-                if (Objects.isNull(getter)) {
-                    return null;
-                }
-                BiConsumer<T, Object> setter = LambdaUtil.buildSetter(targetClazz, fieldName);
-                return Tuple.<Function<?, ?>, BiConsumer<?, ?>>of(getter, setter);
-            }).filter(Objects::nonNull).collect(Collectors.toList());
+            return fields.stream().map(f -> {
+                FieldMetadata data = new FieldMetadata();
+                data.setName(f.getName());
+                data.setType(f.getType());
+                data.setGetter(LambdaUtil.buildGetter(clazz, f));
+                data.setSetter(LambdaUtil.buildSetter(clazz, f));
+                return data;
+            }).collect(Collectors.toList());
         });
     }
 }
