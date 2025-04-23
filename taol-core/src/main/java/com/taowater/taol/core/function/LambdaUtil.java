@@ -37,7 +37,7 @@ public class LambdaUtil {
     /**
      * 返回值缓存
      */
-    private static final Map<Object, Class<?>> RETURN_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Serializable, Class<?>> RETURN_CACHE = new ConcurrentHashMap<>();
 
     /**
      * getter 缓存
