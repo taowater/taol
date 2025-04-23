@@ -1,6 +1,7 @@
 package com.taowater.taol.core.function;
 
 import com.taowater.taol.core.reflect.ClassUtil;
+import com.taowater.taol.core.reflect.MethodTypeUtil;
 import com.taowater.taol.core.reflect.ReflectUtil;
 import lombok.experimental.UtilityClass;
 
@@ -200,16 +201,16 @@ public class LambdaUtil {
             }
             // 2. 查找方法
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle handle = lookup.findVirtual(targetClass, setterName, MethodType.methodType(void.class, fieldType));
+            MethodHandle handle = lookup.findVirtual(targetClass, setterName, MethodTypeUtil.voidReturnType(fieldType));
 
             // 3. 生成Lambda
             CallSite callSite = LambdaMetafactory.metafactory(
                     lookup,
                     "accept",
                     MethodType.methodType(BiConsumer.class),
-                    MethodType.methodType(void.class, Object.class, Object.class),
+                    MethodTypeUtil.voidReturnType(Object.class, Object.class),
                     handle,
-                    MethodType.methodType(void.class, targetClass, fieldType)
+                    MethodTypeUtil.voidReturnType(targetClass, fieldType)
             );
 
             return (BiConsumer<T, P>) callSite.getTarget().invokeExact();
