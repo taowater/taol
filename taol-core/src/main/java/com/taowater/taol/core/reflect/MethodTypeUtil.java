@@ -3,6 +3,7 @@ package com.taowater.taol.core.reflect;
 import lombok.experimental.UtilityClass;
 
 import java.lang.invoke.MethodType;
+import java.util.Arrays;
 
 @UtilityClass
 public class MethodTypeUtil {
@@ -11,11 +12,15 @@ public class MethodTypeUtil {
         return MethodType.methodType(void.class, parameterTypes);
     }
 
-    public MethodType function1Type() {
-        return MethodType.methodType(Object.class, Object.class);
+    public MethodType functionType(int paramNum) {
+        Class<?>[] list = new Class<?>[paramNum];
+        Arrays.fill(list, Object.class);
+        return MethodType.methodType(Object.class, list);
     }
 
-    public MethodType consumer2Type() {
-        return voidReturnType(Object.class, Object.class);
+    public MethodType consumerType(int paramNum) {
+        Class<?>[] list = new Class<?>[paramNum];
+        Arrays.fill(list, Object.class);
+        return voidReturnType(list);
     }
 }

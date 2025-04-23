@@ -208,7 +208,7 @@ public class LambdaUtil {
                     lookup,
                     "apply",
                     MethodType.methodType(Function.class),
-                    MethodTypeUtil.function1Type(),
+                    MethodTypeUtil.functionType(1),
                     handle,
                     MethodType.methodType(fieldType, targetClass)
             );
@@ -260,7 +260,7 @@ public class LambdaUtil {
                     lookup,
                     "accept",
                     MethodType.methodType(BiConsumer.class),
-                    MethodTypeUtil.consumer2Type(),
+                    MethodTypeUtil.consumerType(2),
                     handle,
                     MethodTypeUtil.voidReturnType(targetClass, fieldType)
             );
