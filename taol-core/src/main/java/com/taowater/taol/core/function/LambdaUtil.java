@@ -7,11 +7,9 @@ import lombok.experimental.UtilityClass;
 
 import java.io.Serializable;
 import java.lang.invoke.*;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -135,6 +133,19 @@ public class LambdaUtil {
                 .map(ClassUtil::fromName).collect(Collectors.toList());
     }
 
+    public static <T, R> List<Class<?>> getParameterTypes(Consumer2<T, R> fun) {
+        SerializedLambda lambda = getSerializedLambda(fun);
+        String expr = lambda.getInstantiatedMethodType();
+        Matcher matcher = PARAMETER_TYPE_PATTERN.matcher(expr);
+        if (!matcher.find() || matcher.groupCount() != 1) {
+            return new ArrayList<>(0);
+        }
+        expr = matcher.group(1);
+        return Stream.of(expr.split(";"))
+                .map(s -> Optional.of(s).map(e -> e.replace("L", "")).map(e -> e.replace("/", ".")).orElse(null))
+                .map(ClassUtil::fromName).collect(Collectors.toList());
+    }
+
     /**
      * 获取函数的参数类型
      *
@@ -147,22 +158,47 @@ public class LambdaUtil {
     }
 
     /**
-     * 动态构建Getter Lambda
+     * 获取函数的参数类型
+     *
+     * @param fun 方法
+     * @return {@link List}<{@link Class}<{@link ?}>>
      */
-    @SuppressWarnings("unchecked")
-    public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName) {
-        String cacheKey = targetClass.getName() + "#" + fieldName;
-        return (Function<T, R>) GETTER_CACHE.computeIfAbsent(cacheKey, k -> createGetterLambda(targetClass, fieldName));
+    public static <T, T2> Class<?> getParameterTypes(Consumer2<T, T2> fun, int index) {
+        List<Class<?>> list = getParameterTypes(fun);
+        return list.get(index);
     }
 
-    private static <T, R> Function<T, R> createGetterLambda(Class<T> targetClass, String fieldName) {
-        try {
-            String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
 
-            Class<?> fieldType = ReflectUtil.getFieldType(targetClass, fieldName);
+    public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, Field field) {
+        if (Objects.isNull(field)) {
+            return null;
+        }
+        return buildGetter(targetClass, field.getName(), (Class<R>) field.getType());
+    }
+
+    /**
+     * 动态构建Getter Lambda
+     */
+    public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName) {
+        return buildGetter(targetClass, fieldName, null);
+    }
+
+    public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName, Class<R> fieldType) {
+        String cacheKey = targetClass.getName() + "#" + fieldName;
+        return (Function<T, R>) GETTER_CACHE.computeIfAbsent(cacheKey, k -> createGetterLambda(targetClass, fieldName, fieldType));
+    }
+
+
+    private static <T, R> Function<T, R> createGetterLambda(Class<T> targetClass, String fieldName, Class<R> fieldType) {
+        try {
+            if (fieldType == null) {
+                fieldType = (Class<R>) ReflectUtil.getFieldType(targetClass, fieldName);
+            }
             if (fieldType == null) {
                 return null;
             }
+            String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+
             // 2. 查找方法
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             MethodHandle handle = lookup.findVirtual(targetClass, getterName, MethodType.methodType(fieldType));
@@ -172,30 +208,46 @@ public class LambdaUtil {
                     lookup,
                     "apply",
                     MethodType.methodType(Function.class),
-                    MethodType.methodType(Object.class, Object.class),
+                    MethodTypeUtil.function1Type(),
                     handle,
                     MethodType.methodType(fieldType, targetClass)
             );
 
             return (Function<T, R>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
-            throw new RuntimeException("Failed to create getter for field: " + fieldName, e);
+//            throw new RuntimeException("Failed to create getter for field: " + fieldName, e);
+            return (Function<T, R>) null;
         }
+    }
+
+
+    public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, Field field) {
+        if (Objects.isNull(field)) {
+            return null;
+        }
+        return buildSetter(targetClass, field.getName(), (Class<P>) field.getType());
+    }
+
+    public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName) {
+        return buildSetter(targetClass, fieldName, null);
     }
 
     /**
      * 动态构建Setter Lambda
      */
     @SuppressWarnings("unchecked")
-    public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName) {
+    public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName, Class<P> fieldType) {
         String cacheKey = targetClass.getName() + "#" + fieldName;
-        return (BiConsumer<T, P>) SETTER_CACHE.computeIfAbsent(cacheKey, k -> createSetterLambda(targetClass, fieldName));
+        return (BiConsumer<T, P>) SETTER_CACHE.computeIfAbsent(cacheKey, k -> createSetterLambda(targetClass, fieldName, fieldType));
     }
 
-    private static <T, P> BiConsumer<T, P> createSetterLambda(Class<T> targetClass, String fieldName) {
+    private static <T, P> BiConsumer<T, P> createSetterLambda(Class<T> targetClass, String fieldName, Class<P> fieldType) {
         try {
             String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-            Class<?> fieldType = ReflectUtil.getFieldType(targetClass, fieldName);
+
+            if (fieldType == null) {
+                fieldType = (Class<P>) ReflectUtil.getFieldType(targetClass, fieldName);
+            }
             if (fieldType == null) {
                 return null;
             }
@@ -208,7 +260,7 @@ public class LambdaUtil {
                     lookup,
                     "accept",
                     MethodType.methodType(BiConsumer.class),
-                    MethodTypeUtil.voidReturnType(Object.class, Object.class),
+                    MethodTypeUtil.consumer2Type(),
                     handle,
                     MethodTypeUtil.voidReturnType(targetClass, fieldType)
             );

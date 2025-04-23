@@ -13,11 +13,4 @@
     <version>${revision}</version>
     <packaging>jar</packaging>
     <description>工具库核心</description>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.github.yangtu222</groupId>
-            <artifactId>BeanUtils</artifactId>
-        </dependency>
-    </dependencies>
 </project>

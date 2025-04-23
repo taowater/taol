@@ -35,16 +35,6 @@
         <junit.version>5.11.4</junit.version>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.github.yangtu222</groupId>
-                <artifactId>BeanUtils</artifactId>
-                <version>1.0.11</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <!--lombok-->
         <dependency>
