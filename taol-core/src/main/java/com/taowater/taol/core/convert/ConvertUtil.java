@@ -8,6 +8,7 @@ import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +67,7 @@ public class ConvertUtil {
             if (Objects.isNull(sourceField)) {
                 return;
             }
-            Class<?> sourceFieldType = sourceField.getType();
+            Type sourceFieldType = sourceField.getType();
             if (!Objects.equals(sourceFieldType, field.getType())) {
                 return;
             }
@@ -95,7 +96,7 @@ public class ConvertUtil {
             return fields.stream().map(f -> {
                 FieldMetadata data = new FieldMetadata();
                 data.setName(f.getName());
-                data.setType(f.getType());
+                data.setType(f.getGenericType());
                 data.setGetter(LambdaUtil.buildGetter(clazz, f));
                 data.setSetter(LambdaUtil.buildSetter(clazz, f));
                 return data;

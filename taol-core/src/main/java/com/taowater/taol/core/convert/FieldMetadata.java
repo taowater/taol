@@ -2,6 +2,7 @@ package com.taowater.taol.core.convert;
 
 import lombok.Data;
 
+import java.lang.reflect.Type;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -20,11 +21,12 @@ public class FieldMetadata {
     /**
      * 字段类型
      */
-    private Class<?> type;
+    private Type type;
     /**
      * 字段 getter
      */
     private Function<?, ?> getter;
+
     /**
      * 字段 setter
      */
