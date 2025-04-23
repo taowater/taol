@@ -216,7 +216,7 @@ public class LambdaUtil {
             return (Function<T, R>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
 //            throw new RuntimeException("Failed to create getter for field: " + fieldName, e);
-            return (Function<T, R>) null;
+            return null;
         }
     }
 
@@ -267,7 +267,8 @@ public class LambdaUtil {
 
             return (BiConsumer<T, P>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
-            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
+//            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
+            return null;
         }
     }
 }

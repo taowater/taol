@@ -1,6 +1,8 @@
 package com.taowater.taol.core.convert;
 
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.lang.reflect.Type;
 import java.util.function.BiConsumer;
@@ -11,7 +13,9 @@ import java.util.function.Function;
  *
  * @author zhu56
  */
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode
 public class FieldMetadata {
 
     /**

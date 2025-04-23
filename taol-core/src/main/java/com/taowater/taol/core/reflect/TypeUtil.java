@@ -8,6 +8,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -18,6 +19,13 @@ import java.util.stream.Stream;
 @UtilityClass
 @SuppressWarnings("unused")
 public class TypeUtil {
+
+    /**
+     * 泛型类型缓存
+     * key: type.name_genericType.name
+     * value: 泛型类型数组
+     */
+    private final static Map<String, Type[]> TYPE_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 获取某个类继承树上的某个祖先类的泛型类型
@@ -54,8 +62,10 @@ public class TypeUtil {
         if (EmptyUtil.isHadEmpty(type, genericType)) {
             return null;
         }
-        ParameterizedType parameterizedType = toParameterizedType(type, genericType);
-        return Optional.ofNullable(parameterizedType).map(ParameterizedType::getActualTypeArguments).orElse(null);
+        return TYPE_CACHE.computeIfAbsent(type.getTypeName() + "_" + genericType.getName(), k -> {
+            ParameterizedType parameterizedType = toParameterizedType(type, genericType);
+            return Optional.ofNullable(parameterizedType).map(ParameterizedType::getActualTypeArguments).orElse(null);
+        });
     }
 
     /**
