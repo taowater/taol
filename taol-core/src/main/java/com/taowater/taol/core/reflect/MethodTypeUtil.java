@@ -1,10 +1,15 @@
 package com.taowater.taol.core.reflect;
 
+import com.taowater.taol.core.util.CollUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.invoke.MethodType;
-import java.util.Arrays;
 
+/**
+ * 反射用MethodType构建相关
+ *
+ * @author zhu56
+ */
 @UtilityClass
 public class MethodTypeUtil {
 
@@ -13,14 +18,10 @@ public class MethodTypeUtil {
     }
 
     public MethodType functionType(int paramNum) {
-        Class<?>[] list = new Class<?>[paramNum];
-        Arrays.fill(list, Object.class);
-        return MethodType.methodType(Object.class, list);
+        return MethodType.methodType(Object.class, CollUtil.arr(Object.class, paramNum));
     }
 
     public MethodType consumerType(int paramNum) {
-        Class<?>[] list = new Class<?>[paramNum];
-        Arrays.fill(list, Object.class);
-        return voidReturnType(list);
+        return voidReturnType(CollUtil.arr(Object.class, paramNum));
     }
 }

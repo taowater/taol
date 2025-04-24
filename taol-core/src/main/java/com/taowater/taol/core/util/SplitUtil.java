@@ -11,8 +11,8 @@ import java.util.stream.Stream;
  * 切割字符串工具
  *
  * @author zhu56
- * @date 2024/10/16 01:44
  */
+@SuppressWarnings("unused")
 @UtilityClass
 public class SplitUtil {
 
@@ -72,10 +72,10 @@ public class SplitUtil {
         if (Objects.isNull(str)) {
             return new ArrayList<>();
         }
-        Stream<T> ztream = Arrays.stream(str.split(delimiter)).filter(EmptyUtil::isNotEmpty).map(String::trim).map(action);
+        Stream<T> stream = Arrays.stream(str.split(delimiter)).filter(EmptyUtil::isNotEmpty).map(String::trim).map(action);
         if (distinct) {
-            ztream = ztream.distinct();
+            stream = stream.distinct();
         }
-        return ztream.collect(Collectors.toList());
+        return stream.collect(Collectors.toList());
     }
 }

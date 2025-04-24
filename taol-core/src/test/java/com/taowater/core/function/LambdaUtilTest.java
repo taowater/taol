@@ -33,8 +33,8 @@ class LambdaUtilTest {
     void getParameterTypes() {
         Function1<String, String> fun = s -> s + "123";
 //        SerFunction<String, String> fun2 = s -> s + "123";
-        assertEquals(LambdaUtil.getParameterTypes(fun, 0), String.class);
-        assertEquals(LambdaUtil.getParameterTypes(LambdaUtilTest::fun2, 0), BigDecimal.class);
+        assertEquals(LambdaUtil.getParameterType(fun, 0), String.class);
+        assertEquals(LambdaUtil.getParameterType((Function1<BigDecimal, Long>) LambdaUtilTest::fun2, 0), BigDecimal.class);
     }
 
     @Getter
@@ -68,6 +68,7 @@ class LambdaUtilTest {
 
         String newName = "123";
         BiConsumer<TestBean, String> setter = LambdaUtil.buildSetter(TestBean.class, "name");
+        Class<?> parameterTypes = LambdaUtil.getParameterType(setter::accept, 0);
         setter.accept(testBean, newName);
         assertEquals(testBean.getName(), newName);
     }

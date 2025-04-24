@@ -2,6 +2,7 @@ package com.taowater.taol.core.util;
 
 import lombok.experimental.UtilityClass;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -53,10 +54,21 @@ public class CollUtil {
         return null;
     }
 
+    @SafeVarargs
     public static <E> List<E> list(E... elements) {
         if (EmptyUtil.isEmpty(elements)) {
             return new ArrayList<>();
         }
         return Arrays.stream(elements).collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T[] arr(T obj, int size) {
+        if (Objects.isNull(obj)) {
+            return (T[]) new Object[size];
+        }
+        T[] arr = (T[]) Array.newInstance(obj.getClass(), size);
+        Arrays.fill(arr, obj);
+        return arr;
     }
 }

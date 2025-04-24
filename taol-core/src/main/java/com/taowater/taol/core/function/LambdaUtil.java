@@ -122,6 +122,13 @@ public class LambdaUtil {
      */
     public static <T, R> List<Class<?>> getParameterTypes(Function1<T, R> fun) {
         SerializedLambda lambda = getSerializedLambda(fun);
+        return getParameterTypes(lambda);
+    }
+
+    public static List<Class<?>> getParameterTypes(SerializedLambda lambda) {
+        if (Objects.isNull(lambda)) {
+            return new ArrayList<>(0);
+        }
         String expr = lambda.getInstantiatedMethodType();
         Matcher matcher = PARAMETER_TYPE_PATTERN.matcher(expr);
         if (!matcher.find() || matcher.groupCount() != 1) {
@@ -135,15 +142,7 @@ public class LambdaUtil {
 
     public static <T, R> List<Class<?>> getParameterTypes(Consumer2<T, R> fun) {
         SerializedLambda lambda = getSerializedLambda(fun);
-        String expr = lambda.getInstantiatedMethodType();
-        Matcher matcher = PARAMETER_TYPE_PATTERN.matcher(expr);
-        if (!matcher.find() || matcher.groupCount() != 1) {
-            return new ArrayList<>(0);
-        }
-        expr = matcher.group(1);
-        return Stream.of(expr.split(";"))
-                .map(s -> Optional.of(s).map(e -> e.replace("L", "")).map(e -> e.replace("/", ".")).orElse(null))
-                .map(ClassUtil::fromName).collect(Collectors.toList());
+        return getParameterTypes(lambda);
     }
 
     /**
@@ -152,7 +151,7 @@ public class LambdaUtil {
      * @param fun 方法
      * @return {@link List}<{@link Class}<{@link ?}>>
      */
-    public static <T, R> Class<?> getParameterTypes(Function1<T, R> fun, int index) {
+    public static <T, R> Class<?> getParameterType(Function1<T, R> fun, int index) {
         List<Class<?>> list = getParameterTypes(fun);
         return list.get(index);
     }
@@ -163,7 +162,7 @@ public class LambdaUtil {
      * @param fun 方法
      * @return {@link List}<{@link Class}<{@link ?}>>
      */
-    public static <T, T2> Class<?> getParameterTypes(Consumer2<T, T2> fun, int index) {
+    public static <T, T2> Class<?> getParameterType(Consumer2<T, T2> fun, int index) {
         List<Class<?>> list = getParameterTypes(fun);
         return list.get(index);
     }
@@ -267,8 +266,8 @@ public class LambdaUtil {
 
             return (BiConsumer<T, P>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
-//            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
-            return null;
+            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
+//            return null;
         }
     }
 }
