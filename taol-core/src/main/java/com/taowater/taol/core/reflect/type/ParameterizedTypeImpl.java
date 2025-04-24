@@ -1,4 +1,4 @@
-package com.taowater.taol.core.reflect;
+package com.taowater.taol.core.reflect.type;
 
 
 import lombok.Getter;

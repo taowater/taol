@@ -1,5 +1,6 @@
 package com.taowater.taol.core.reflect;
 
+import com.taowater.taol.core.reflect.type.ParameterizedTypeImpl;
 import com.taowater.taol.core.util.CollUtil;
 import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
