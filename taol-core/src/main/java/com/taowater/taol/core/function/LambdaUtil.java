@@ -12,6 +12,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -266,8 +267,50 @@ public class LambdaUtil {
 
             return (BiConsumer<T, P>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
-            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
-//            return null;
+//            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
+            return null;
+        }
+    }
+
+    public static <T, P> BiConsumer<T, P> buildChainSetter(Class<T> targetClass, Field field) {
+        if (Objects.isNull(field)) {
+            return null;
+        }
+        return buildChainSetter(targetClass, field.getName(), (Class<P>) field.getType());
+    }
+
+    public static <T, P> BiConsumer<T, P> buildChainSetter(Class<T> targetClass, String fieldName, Class<P> fieldType) {
+        String cacheKey = targetClass.getName() + "#" + fieldName;
+        return (BiConsumer<T, P>) SETTER_CACHE.computeIfAbsent(cacheKey, k -> createChainSetterLambda(targetClass, fieldName, fieldType));
+    }
+
+    private static <T, P> BiConsumer<T, P> createChainSetterLambda(Class<T> targetClass, String fieldName, Class<P> fieldType) {
+        try {
+            String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+
+            if (fieldType == null) {
+                fieldType = (Class<P>) ReflectUtil.getFieldType(targetClass, fieldName);
+            }
+            if (fieldType == null) {
+                return null;
+            }
+            // 2. 查找方法
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            MethodHandle handle = lookup.findVirtual(targetClass, setterName, MethodType.methodType(targetClass, fieldType));
+
+            // 3. 生成Lambda
+            CallSite callSite = LambdaMetafactory.metafactory(
+                    lookup,
+                    "apply",
+                    MethodType.methodType(BiFunction.class),
+                    MethodTypeUtil.functionType(2),
+                    handle,
+                    MethodType.methodType(targetClass, targetClass, fieldType)
+            );
+
+            return ((BiFunction<T, P, T>) callSite.getTarget().invokeExact())::apply;
+        } catch (Throwable e) {
+            return null;
         }
     }
 }

@@ -84,7 +84,7 @@ public class ConvertUtil {
         });
     }
 
-    private static Set<FieldMetadata> getFieldInfos(Class<?> clazz) {
+    private static <T> Set<FieldMetadata> getFieldInfos(Class<T> clazz) {
         if (EmptyUtil.isEmpty(clazz)) {
             return new HashSet<>();
         }
@@ -98,7 +98,11 @@ public class ConvertUtil {
                 data.setName(f.getName());
                 data.setType(f.getGenericType());
                 data.setGetter(LambdaUtil.buildGetter(clazz, f));
-                data.setSetter(LambdaUtil.buildSetter(clazz, f));
+                BiConsumer<T, Object> setter = LambdaUtil.buildSetter(clazz, f);
+                if (Objects.isNull(setter)) {
+                    setter = LambdaUtil.buildChainSetter(clazz, f);
+                }
+                data.setSetter(setter);
                 return data;
             }).collect(Collectors.toSet());
         });
