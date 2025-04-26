@@ -148,7 +148,7 @@ public class TypeUtil {
         }
         if (Stream.of(arguments).anyMatch(e -> e instanceof TypeVariable)) {
             List<Type> realTypes = getRealTypes(parentType, ((Class<?>) type.getRawType()).getTypeParameters(), type.getActualTypeArguments());
-            return new ParameterizedTypeImpl(realTypes.toArray(new Type[0]), (Class<?>) parentType.getRawType(), parentType.getOwnerType());
+            return new ParameterizedTypeImpl((Class<?>) parentType.getRawType(), realTypes.toArray(new Type[0]), parentType.getOwnerType());
         }
         return parentType;
     }

@@ -3,7 +3,6 @@ package com.taowater.core.reflect;
 import com.taowater.taol.core.reflect.TypeUtil;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,12 +61,5 @@ class ClassUtilTest {
         assertEquals(b.getAType(), Integer.class);
         assertEquals(b.getBType(), String.class);
         assertEquals(b.getB2Type(), Long.class);
-    }
-
-
-    public static void main(String[] args) {
-        Type actualType = TypeUtil.getTypeArgument(ClassE.class, InterfaceB.class, 0);
-        System.out.println("Actual type of InterfaceA: " + actualType);
-        // 输出: Actual type of InterfaceA: class java.lang.Integer
     }
 }
