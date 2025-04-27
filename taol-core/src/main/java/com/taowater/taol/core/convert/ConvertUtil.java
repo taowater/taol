@@ -2,6 +2,7 @@ package com.taowater.taol.core.convert;
 
 
 import com.taowater.taol.core.function.LambdaUtil;
+import com.taowater.taol.core.reflect.AssignableUtil;
 import com.taowater.taol.core.reflect.ClassUtil;
 import com.taowater.taol.core.reflect.ReflectUtil;
 import com.taowater.taol.core.util.EmptyUtil;
@@ -68,7 +69,7 @@ public class ConvertUtil {
                 return;
             }
             Type sourceFieldType = sourceField.getType();
-            if (!Objects.equals(sourceFieldType, field.getType())) {
+            if (!AssignableUtil.isAssignable(sourceFieldType, field.getType())) {
                 return;
             }
             Function<S, Object> getter = (Function<S, Object>) sourceField.getGetter();
