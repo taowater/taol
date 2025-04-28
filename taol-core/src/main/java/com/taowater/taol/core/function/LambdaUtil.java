@@ -1,19 +1,13 @@
 package com.taowater.taol.core.function;
 
 import com.taowater.taol.core.reflect.ClassUtil;
-import com.taowater.taol.core.reflect.MethodTypeUtil;
-import com.taowater.taol.core.reflect.ReflectUtil;
 import lombok.experimental.UtilityClass;
 
 import java.io.Serializable;
-import java.lang.invoke.*;
-import java.lang.reflect.Field;
+import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,14 +34,6 @@ public class LambdaUtil {
      */
     private static final Map<Serializable, Class<?>> RETURN_CACHE = new ConcurrentHashMap<>();
 
-    /**
-     * getter 缓存
-     */
-    private static final Map<String, Function<?, ?>> GETTER_CACHE = new ConcurrentHashMap<>();
-    /**
-     * setter 的缓存
-     */
-    private static final Map<String, BiConsumer<?, ?>> SETTER_CACHE = new ConcurrentHashMap<>();
     /**
      * 返回类型模式
      */
@@ -168,129 +154,4 @@ public class LambdaUtil {
         return list.get(index);
     }
 
-
-    public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, Field field) {
-        if (Objects.isNull(field)) {
-            return null;
-        }
-        return buildGetter(targetClass, field.getName(), (Class<R>) field.getType());
-    }
-
-    /**
-     * 动态构建Getter Lambda
-     */
-    public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName) {
-        return buildGetter(targetClass, fieldName, null);
-    }
-
-    public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName, Class<R> fieldType) {
-        String cacheKey = targetClass.getName() + "#" + fieldName;
-        return (Function<T, R>) GETTER_CACHE.computeIfAbsent(cacheKey, k -> createGetterLambda(targetClass, fieldName, fieldType));
-    }
-
-
-    private static <T, R> Function<T, R> createGetterLambda(Class<T> targetClass, String fieldName, Class<R> fieldType) {
-        try {
-            if (fieldType == null) {
-                fieldType = (Class<R>) ReflectUtil.getFieldType(targetClass, fieldName);
-            }
-            if (fieldType == null) {
-                return null;
-            }
-            String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-
-            // 2. 查找方法
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle handle = lookup.findVirtual(targetClass, getterName, MethodType.methodType(fieldType));
-
-            // 3. 生成Lambda
-            CallSite callSite = LambdaMetafactory.metafactory(
-                    lookup,
-                    "apply",
-                    MethodType.methodType(Function.class),
-                    MethodTypeUtil.functionType(1),
-                    handle,
-                    MethodType.methodType(fieldType, targetClass)
-            );
-
-            return (Function<T, R>) callSite.getTarget().invokeExact();
-        } catch (Throwable e) {
-//            throw new RuntimeException("Failed to create getter for field: " + fieldName, e);
-            return null;
-        }
-    }
-
-
-    public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, Field field) {
-        if (Objects.isNull(field)) {
-            return null;
-        }
-        return buildSetter(targetClass, field.getName(), (Class<P>) field.getType());
-    }
-
-    public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName) {
-        return buildSetter(targetClass, fieldName, null);
-    }
-
-    /**
-     * 动态构建Setter Lambda
-     */
-    @SuppressWarnings("unchecked")
-    public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName, Class<P> fieldType) {
-        String cacheKey = targetClass.getName() + "#" + fieldName;
-        return (BiConsumer<T, P>) SETTER_CACHE.computeIfAbsent(cacheKey, k -> createSetterLambda(targetClass, fieldName, fieldType));
-    }
-
-    private static <T, P> BiConsumer<T, P> createSetterLambda(Class<T> targetClass, String fieldName, Class<P> fieldType) {
-        try {
-            String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-
-            if (fieldType == null) {
-                fieldType = (Class<P>) ReflectUtil.getFieldType(targetClass, fieldName);
-            }
-            if (fieldType == null) {
-                return null;
-            }
-            boolean chain = false;
-            MethodHandle handle;
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            try {
-                handle = lookup.findVirtual(targetClass, setterName, MethodTypeUtil.voidReturnType(fieldType));
-            } catch (NoSuchMethodException e) {
-                // 如果找不到普通setter，尝试查找链式调用的setter
-                handle = lookup.findVirtual(targetClass, setterName, MethodType.methodType(targetClass, fieldType));
-                chain = true;
-            }
-            if (handle == null) {
-                return null;
-            }
-
-
-            CallSite callSite = chain ?
-                    LambdaMetafactory.metafactory(
-                            lookup,
-                            "apply",
-                            MethodType.methodType(BiFunction.class),
-                            MethodTypeUtil.functionType(2),
-                            handle,
-                            MethodType.methodType(targetClass, targetClass, fieldType)
-                    ) :
-                    LambdaMetafactory.metafactory(
-                            lookup,
-                            "accept",
-                            MethodType.methodType(BiConsumer.class),
-                            MethodTypeUtil.consumerType(2),
-                            handle,
-                            MethodTypeUtil.voidReturnType(targetClass, fieldType)
-                    );
-
-            if (chain) {
-                return ((BiFunction<T, P, T>) callSite.getTarget().invokeExact())::apply;
-            }
-            return (BiConsumer<T, P>) callSite.getTarget().invokeExact();
-        } catch (Throwable e) {
-//            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
-            return null;
-        }
-    }
 }

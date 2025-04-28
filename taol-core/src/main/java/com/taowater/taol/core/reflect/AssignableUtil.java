@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * 判断赋值工具
@@ -20,6 +21,7 @@ public class AssignableUtil {
 
     private static final Map<Class<?>, Class<?>> WRAPPER = new HashMap<>();
     private static final Map<String, Boolean> RESULT = new HashMap<>();
+    public static final Map<Class<?>, Map<Class<?>, Function<?, ?>>> CONVERT = new HashMap<>();
 
     static {
         WRAPPER.put(int.class, Integer.class);
@@ -30,7 +32,17 @@ public class AssignableUtil {
         WRAPPER.put(byte.class, Byte.class);
         WRAPPER.put(short.class, Short.class);
         WRAPPER.put(char.class, Character.class);
+
+
+        Map<Class<?>, Function<?, ?>> map = new HashMap<>();
+        map.put(Byte.class, (Integer e) -> e.byteValue());
+        map.put(Short.class, (Integer e) -> e.shortValue());
+        map.put(Float.class, (Integer e) -> e.floatValue());
+        map.put(Double.class, (Integer e) -> e.doubleValue());
+        map.put(Long.class, (Integer e) -> e.longValue());
+        CONVERT.put(Integer.class, map);
     }
+
 
     /**
      * 获取包装类对应的基本类型（如果没有则返回 null）
@@ -78,21 +90,15 @@ public class AssignableUtil {
      * 判断两个 Class 是否可以直接赋值（基本类型、包装类型、继承关系）
      */
     private static boolean isClassAssignable(Class<?> source, Class<?> target) {
-        if (Objects.equals(source, target)) {
-            return true;
-        }
-
+        Class<?> sourceWrapper = source;
         if (source.isPrimitive()) {
-            Class<?> wrapper = WRAPPER.get(source);
-            return wrapper != null && (wrapper == target || wrapper.isAssignableFrom(target));
+            sourceWrapper = WRAPPER.get(source);
         }
+        Class<?> targetWrapper = target;
         if (target.isPrimitive()) {
-            Class<?> primitive = getPrimitive(source);
-            return primitive != null && primitive == target;
+            targetWrapper = getPrimitive(target);
         }
-
-        // 3. 普通继承关系
-        return target.isAssignableFrom(source);
+        return Objects.equals(sourceWrapper, targetWrapper) || targetWrapper.isAssignableFrom(sourceWrapper);
     }
 
     /**

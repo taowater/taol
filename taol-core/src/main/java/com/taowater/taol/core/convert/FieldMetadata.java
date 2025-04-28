@@ -13,11 +13,10 @@ import java.util.function.Function;
  *
  * @author zhu56
  */
-@Getter
 @Setter
+@Getter
 @EqualsAndHashCode
 public class FieldMetadata {
-
     /**
      * 字段名称
      */

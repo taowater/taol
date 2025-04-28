@@ -1,5 +1,6 @@
 package com.taowater.core.function;
 
+import com.taowater.taol.core.convert.GetSetHelper;
 import com.taowater.taol.core.function.Function1;
 import com.taowater.taol.core.function.LambdaUtil;
 import lombok.Getter;
@@ -56,7 +57,7 @@ class LambdaUtilTest {
 
         TestBean testBean = new TestBean();
         testBean.setName("test");
-        Function<TestBean, String> getter = LambdaUtil.buildGetter(TestBean.class, "name");
+        Function<TestBean, String> getter = GetSetHelper.buildGetter(TestBean.class, "name");
         assertEquals(getter.apply(testBean), testBean.getName());
     }
 
@@ -67,7 +68,7 @@ class LambdaUtilTest {
         testBean.setName("test");
 
         String newName = "123";
-        BiConsumer<TestBean, String> setter = LambdaUtil.buildSetter(TestBean.class, "name");
+        BiConsumer<TestBean, String> setter = GetSetHelper.buildSetter(TestBean.class, "name");
         Class<?> parameterTypes = LambdaUtil.getParameterType(setter::accept, 0);
         setter.accept(testBean, newName);
         assertEquals(testBean.getName(), newName);

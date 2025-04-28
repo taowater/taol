@@ -78,4 +78,11 @@ public class ClassUtil {
         }
         return null;
     }
+
+    /**
+     * 获取字段get方法名称
+     */
+    public static String getGetMethodName(String fieldName) {
+        return "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+    }
 }

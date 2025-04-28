@@ -1,20 +1,15 @@
 package com.taowater.taol.core.convert;
 
 
-import com.taowater.taol.core.function.LambdaUtil;
 import com.taowater.taol.core.reflect.AssignableUtil;
 import com.taowater.taol.core.reflect.ClassUtil;
-import com.taowater.taol.core.reflect.ReflectUtil;
 import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 转换工具类
@@ -24,11 +19,6 @@ import java.util.stream.Collectors;
  */
 @UtilityClass
 public class ConvertUtil {
-
-    /**
-     * 类的全限定类名与类的字段信息缓存
-     */
-    private static final Map<String, Set<FieldMetadata>> FIELD_INDO_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 转换
@@ -54,26 +44,20 @@ public class ConvertUtil {
         if (EmptyUtil.isHadEmpty(source, target)) {
             return;
         }
-        Set<FieldMetadata> sourceFields = getFieldInfos(source.getClass());
-        if (EmptyUtil.isEmpty(sourceFields)) {
-            return;
-        }
-        Set<FieldMetadata> targetFields = getFieldInfos(target.getClass());
-        if (EmptyUtil.isEmpty(targetFields)) {
-            return;
-        }
-        Map<String, FieldMetadata> map = sourceFields.stream().collect(Collectors.toMap(FieldMetadata::getName, e -> e));
-        targetFields.forEach(field -> {
-            FieldMetadata sourceField = map.get(field.getName());
-            if (Objects.isNull(sourceField)) {
+        BeanMetadata sourceMetadata = BeanMetadata.of(source.getClass());
+        BeanMetadata targetMetadata = BeanMetadata.of(target.getClass());
+        targetMetadata.getFieldMap().forEach((k, v) -> {
+            FieldMetadata sourceField = sourceMetadata.getField(k);
+            if (sourceField == null) {
                 return;
             }
             Type sourceFieldType = sourceField.getType();
-            if (!AssignableUtil.isAssignable(sourceFieldType, field.getType())) {
+            Type targetFieldType = v.getType();
+            if (!AssignableUtil.isAssignable(sourceFieldType, targetFieldType)) {
                 return;
             }
-            Function<S, Object> getter = (Function<S, Object>) sourceField.getGetter();
-            BiConsumer<T, Object> setter = (BiConsumer<T, Object>) field.getSetter();
+            BiConsumer<T, Object> setter = (BiConsumer<T, Object>) targetMetadata.getSetter(k);
+            Function<S, Object> getter = (Function<S, Object>) sourceMetadata.getGetter(k);
             if (EmptyUtil.isHadEmpty(getter, setter)) {
                 return;
             }
@@ -82,26 +66,6 @@ public class ConvertUtil {
                 return;
             }
             setter.accept(target, o);
-        });
-    }
-
-    private static <T> Set<FieldMetadata> getFieldInfos(Class<T> clazz) {
-        if (EmptyUtil.isEmpty(clazz)) {
-            return new HashSet<>();
-        }
-        return FIELD_INDO_CACHE.computeIfAbsent(clazz.getName(), k -> {
-            List<Field> fields = ReflectUtil.getFields(clazz);
-            if (EmptyUtil.isEmpty(fields)) {
-                return new HashSet<>();
-            }
-            return fields.stream().map(f -> {
-                FieldMetadata data = new FieldMetadata();
-                data.setName(f.getName());
-                data.setType(f.getGenericType());
-                data.setGetter(LambdaUtil.buildGetter(clazz, f));
-                data.setSetter(LambdaUtil.buildSetter(clazz, f));
-                return data;
-            }).collect(Collectors.toSet());
         });
     }
 }

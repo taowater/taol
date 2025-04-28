@@ -19,6 +19,7 @@
 
     <modules>
         <module>taol-core</module>
+        <module>convert-test</module>
     </modules>
 
     <properties>
