@@ -1,10 +1,12 @@
 package com.test;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.BeanCopier;
 import com.taowater.taol.core.convert.ConvertUtil;
 import com.taowater.taol.core.util.CollUtil;
 import com.test.bean.Bean1;
 import com.test.bean.Bean2;
+import com.test.bean.BeanMapper;
 import io.vavr.Function2;
 import org.springframework.beans.BeanUtils;
 
@@ -21,25 +23,30 @@ public class ConvertTest {
 
         Bean2 bean2 = new Bean2();
 
-        System.out.println(ConvertUtil.convert(bean1, Bean2.class));
+        System.out.println("taol:" + ConvertUtil.convert(bean1, Bean2.class));
         Bean2 hutoolBean2 = BeanUtil.copyProperties(bean1, Bean2.class);
-        System.out.println(hutoolBean2);
+        System.out.println("hutool:" + hutoolBean2);
         BeanUtils.copyProperties(bean1, bean2);
-        System.out.println(bean2);
-
+        System.out.println("spring:" + bean2);
+        Bean2 bean3 = new Bean2();
+        BeanCopier.create(bean1, bean3, null).copy();
+        System.out.println("cglib:" + bean3);
+        System.out.println("mapstruct:" + BeanMapper.INSTANCE.to(bean1));
         Function2<String, BiConsumer<Object, Object>, Void> testFun = (name, fun) -> {
             long start = System.currentTimeMillis();
             for (int i = 0; i < 100000; i++) {
                 fun.accept(bean1, bean2);
             }
             long end = System.currentTimeMillis();
-            System.out.println(name + ":" + (end - start) + "ms");
+            System.out.printf("%10s:%dms\n", name, (end - start));
             return null;
         };
 
         testFun.apply("taol", ConvertUtil::copy);
         testFun.apply("hutool", BeanUtil::copyProperties);
         testFun.apply("spring", BeanUtils::copyProperties);
+        testFun.apply("cglib", (b1, b2) -> BeanCopier.create(b1, b2, null).copy());
+        testFun.apply("mapstruct", (b1, b2) -> BeanMapper.INSTANCE.to((Bean1) b1));
     }
 
     private static Bean1 getBean1() {

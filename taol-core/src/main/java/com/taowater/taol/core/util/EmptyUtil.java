@@ -14,9 +14,9 @@ import java.util.stream.Stream;
  * 判空工具类
  *
  * @author Zhu56
- * @date 2021/10/16 2:05
  */
 @UtilityClass
+@SuppressWarnings("unused")
 public class EmptyUtil {
 
     private static final List<Tuple<Predicate<Object>, Predicate<Object>>> STRATEGY = new ArrayList<>();
@@ -34,9 +34,6 @@ public class EmptyUtil {
 
     /**
      * 判断任意对象是否为空
-     *
-     * @param obj 任意对象
-     * @return 判断结果
      */
     public static boolean isEmpty(Object obj) {
         if (Objects.isNull(obj)) {
@@ -53,9 +50,6 @@ public class EmptyUtil {
 
     /**
      * 判断任意对象是否不为空
-     *
-     * @param obj 任意对象
-     * @return 判断结果
      */
     public static boolean isNotEmpty(Object obj) {
         return !isEmpty(obj);
@@ -63,29 +57,34 @@ public class EmptyUtil {
 
     /**
      * 判断对象是否至少一个为空 主要包括字符串，集合，数组，及其他类型
-     *
-     * @param objs 若干个对象
-     * @return 判断结果
      */
     public static boolean isHadEmpty(Object... objs) {
         return Stream.of(objs).anyMatch(EmptyUtil::isEmpty);
     }
 
     /**
+     * 判断若干个对象中是否存在null
+     */
+    public static boolean isHadNull(Object... objs) {
+        return Stream.of(objs).anyMatch(Objects::isNull);
+    }
+
+    /**
      * 判断若干个对象中是否存在非空
-     *
-     * @param objs 若干个对象
-     * @return 判断结果
      */
     public static boolean isHadNotEmpty(Object... objs) {
         return Stream.of(objs).anyMatch(EmptyUtil::isNotEmpty);
     }
 
     /**
+     * 判断若干个对象中是否存在非null
+     */
+    public static boolean isHadNotNull(Object... objs) {
+        return Stream.of(objs).anyMatch(Objects::nonNull);
+    }
+
+    /**
      * 判断若干个对象是否全空
-     *
-     * @param objs 若干个对象
-     * @return 判断结果
      */
     public static boolean isAllEmpty(Object... objs) {
         return !isHadNotEmpty(objs);
@@ -93,9 +92,6 @@ public class EmptyUtil {
 
     /**
      * 判断若干个对象中是否全为非空
-     *
-     * @param objs 若干个对象
-     * @return 判断结果
      */
     public static boolean isAllNotEmpty(Object... objs) {
         return !isHadEmpty(objs);
@@ -103,9 +99,6 @@ public class EmptyUtil {
 
     /**
      * 判断若干个对象中是否既有空的，也有非空的
-     *
-     * @param objs 若干个对象
-     * @return 判断结果
      */
     public static boolean isHadBoth(Object... objs) {
         return isHadEmpty(objs) && isHadNotEmpty(objs);
@@ -113,9 +106,6 @@ public class EmptyUtil {
 
     /**
      * 是否为空白串
-     *
-     * @param str 字符串
-     * @return boolean
      */
     public static boolean isBlank(CharSequence str) {
         return isEmpty(str) || str.toString().trim().isEmpty();
@@ -123,9 +113,6 @@ public class EmptyUtil {
 
     /**
      * 是否为非空白串
-     *
-     * @param str 字符串
-     * @return boolean
      */
     public static boolean isNotBlank(CharSequence str) {
         return !isBlank(str);

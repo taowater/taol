@@ -1,6 +1,5 @@
 package com.taowater.taol.core.reflect;
 
-import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.GenericArrayType;
@@ -135,10 +134,6 @@ public class AssignableUtil {
     private static boolean isArrayAssignable(Type source, Type target) {
         Type sourceComponentType = TypeUtil.getArrayComponentType(source);
         Type targetComponentType = TypeUtil.getArrayComponentType(target);
-
-        if (EmptyUtil.isHadEmpty(sourceComponentType, targetComponentType)) {
-            return false;
-        }
         return isAssignable(sourceComponentType, targetComponentType);
     }
 }

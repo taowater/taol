@@ -58,8 +58,11 @@ public class ConvertUtil {
                 return;
             }
             BiConsumer<T, Object> setter = (BiConsumer<T, Object>) targetMetadata.getSetter(k);
+            if (Objects.isNull(setter)) {
+                return;
+            }
             Function<S, Object> getter = (Function<S, Object>) sourceMetadata.getGetter(k);
-            if (Objects.isNull(getter) || Objects.isNull(setter)) {
+            if (Objects.isNull(getter)) {
                 return;
             }
             Object o = getter.apply(source);
