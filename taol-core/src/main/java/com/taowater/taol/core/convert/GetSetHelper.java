@@ -1,7 +1,5 @@
 package com.taowater.taol.core.convert;
 
-import com.taowater.taol.core.convert.function.IntGetter;
-import com.taowater.taol.core.convert.function.StringGetter;
 import com.taowater.taol.core.reflect.ClassUtil;
 import com.taowater.taol.core.reflect.MethodTypeUtil;
 import com.taowater.taol.core.reflect.ReflectUtil;
@@ -55,14 +53,9 @@ public class GetSetHelper {
             if (fieldType == null) {
                 fieldType = ReflectUtil.getFieldType(targetClass, fieldName);
             }
+
             if (fieldType == null) {
                 return null;
-            }
-            if (fieldType.equals(String.class)) {
-                return StringGetter.build(targetClass, fieldName);
-            }
-            if (fieldType.equals(int.class)) {
-                return IntGetter.build(targetClass, fieldName)::apply;
             }
             String getterName = ClassUtil.getGetMethodName(fieldName);
 
@@ -107,7 +100,7 @@ public class GetSetHelper {
 
     private static <T, P> BiConsumer<T, P> createSetterLambda(Class<T> targetClass, String fieldName, Class<P> fieldType) {
         try {
-            String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            String setterName = ClassUtil.getSetMethodName(fieldName);
 
             if (fieldType == null) {
                 fieldType = (Class<P>) ReflectUtil.getFieldType(targetClass, fieldName);

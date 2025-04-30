@@ -85,4 +85,8 @@ public class ClassUtil {
     public static String getGetMethodName(String fieldName) {
         return "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
+
+    public static String getSetMethodName(String fieldName) {
+        return "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+    }
 }

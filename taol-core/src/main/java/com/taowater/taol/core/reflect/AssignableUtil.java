@@ -60,7 +60,7 @@ public class AssignableUtil {
      * 判断两个类型是否可以直接赋值（包括泛型、自动装箱/拆箱、继承关系）
      */
     public static boolean isAssignable(Type source, Type target) {
-        if (EmptyUtil.isHadEmpty(source, target)) {
+        if (Objects.isNull(source) || Objects.isNull(target)) {
             return false;
         }
         return RESULT.computeIfAbsent(source.getTypeName() + "@" + target.getTypeName(), k -> {

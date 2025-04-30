@@ -3,10 +3,10 @@ package com.taowater.taol.core.convert;
 
 import com.taowater.taol.core.reflect.AssignableUtil;
 import com.taowater.taol.core.reflect.ClassUtil;
-import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -41,12 +41,13 @@ public class ConvertUtil {
      */
     @SuppressWarnings("unchecked")
     public static <S, T> void copy(S source, T target) {
-        if (EmptyUtil.isHadEmpty(source, target)) {
+        if (Objects.isNull(source) || Objects.isNull(target)) {
             return;
         }
         BeanMetadata sourceMetadata = BeanMetadata.of(source.getClass());
         BeanMetadata targetMetadata = BeanMetadata.of(target.getClass());
-        targetMetadata.getFieldMap().forEach((k, v) -> {
+        Map<String, FieldMetadata> fieldMap = targetMetadata.getFieldMap();
+        fieldMap.forEach((k, v) -> {
             FieldMetadata sourceField = sourceMetadata.getField(k);
             if (sourceField == null) {
                 return;
@@ -58,7 +59,7 @@ public class ConvertUtil {
             }
             BiConsumer<T, Object> setter = (BiConsumer<T, Object>) targetMetadata.getSetter(k);
             Function<S, Object> getter = (Function<S, Object>) sourceMetadata.getGetter(k);
-            if (EmptyUtil.isHadEmpty(getter, setter)) {
+            if (Objects.isNull(getter) || Objects.isNull(setter)) {
                 return;
             }
             Object o = getter.apply(source);
