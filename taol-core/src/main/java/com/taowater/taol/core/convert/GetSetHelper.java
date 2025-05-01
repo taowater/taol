@@ -14,6 +14,11 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * get/set构建帮助
+ *
+ * @author zhu56
+ */
 @UtilityClass
 public class GetSetHelper {
 

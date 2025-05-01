@@ -22,8 +22,8 @@ public class SplitUtil {
      * @param obj 原对象
      * @return 分割结果
      */
-    public static List<Long> splitLongIds(Object obj) {
-        return splitLongIds(obj, ",");
+    public static List<Long> splitLong(Object obj) {
+        return splitLong(obj, ",");
     }
 
     /**
@@ -33,7 +33,7 @@ public class SplitUtil {
      * @param delimiter 分隔符
      * @return 分割结果
      */
-    public static List<Long> splitLongIds(Object obj, String delimiter) {
+    public static List<Long> splitLong(Object obj, String delimiter) {
         return split(obj, delimiter, Long::valueOf, true);
     }
 
@@ -43,8 +43,8 @@ public class SplitUtil {
      * @param obj 原对象
      * @return 分割结果
      */
-    public static List<String> splitIds(Object obj) {
-        return splitIds(obj, ",");
+    public static List<String> split(Object obj) {
+        return split(obj, ",");
     }
 
     /**
@@ -54,7 +54,7 @@ public class SplitUtil {
      * @param delimiter 分隔符
      * @return 分割结果
      */
-    public static List<String> splitIds(Object obj, String delimiter) {
+    public static List<String> split(Object obj, String delimiter) {
         return split(obj, delimiter, String::valueOf, true);
     }
 
