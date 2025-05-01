@@ -15,7 +15,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * 字段元信息
+ * bean元信息
  *
  * @author zhu56
  */

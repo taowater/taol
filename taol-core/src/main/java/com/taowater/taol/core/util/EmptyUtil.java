@@ -1,13 +1,13 @@
 package com.taowater.taol.core.util;
 
 
-import com.taowater.taol.core.bo.Tuple;
 import com.taowater.taol.core.function.Emptyable;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
-import java.util.*;
-import java.util.function.Predicate;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -18,34 +18,32 @@ import java.util.stream.Stream;
 @UtilityClass
 @SuppressWarnings("unused")
 public class EmptyUtil {
-
-    private static final List<Tuple<Predicate<Object>, Predicate<Object>>> STRATEGY = new ArrayList<>();
-
-    static {
-        Collections.addAll(STRATEGY,
-                Tuple.of(Emptyable.class::isInstance, o -> ((Emptyable) o).isEmpty()),
-                Tuple.of(CharSequence.class::isInstance, o -> ((CharSequence) o).length() == 0),
-                Tuple.of(Iterator.class::isInstance, o -> !((Iterator<?>) o).hasNext()),
-                Tuple.of(Iterable.class::isInstance, o -> EmptyUtil.isEmpty(((Iterable<?>) o).iterator())),
-                Tuple.of(Map.class::isInstance, o -> ((Map<?, ?>) o).isEmpty()),
-                Tuple.of(o -> o.getClass().isArray(), o -> Array.getLength(o) == 0)
-        );
-    }
-
     /**
      * 判断任意对象是否为空
      */
-    public static boolean isEmpty(Object obj) {
-        if (Objects.isNull(obj)) {
+    public static boolean isEmpty(Object o) {
+        if (Objects.isNull(o)) {
             return true;
         }
-        return STRATEGY
-                .stream()
-                .filter(e -> e.getLeft().test(obj))
-                .findFirst()
-                .map(Tuple::getRight)
-                .map(e -> e.test(obj))
-                .orElse(false);
+        if (o instanceof Emptyable) {
+            return ((Emptyable) o).isEmpty();
+        }
+        if (o instanceof CharSequence) {
+            return ((CharSequence) o).length() == 0;
+        }
+        if (o instanceof Iterator) {
+            return !((Iterator<?>) o).hasNext();
+        }
+        if (o instanceof Iterable) {
+            return isEmpty(((Iterable<?>) o).iterator());
+        }
+        if (o instanceof Map) {
+            return ((Map<?, ?>) o).isEmpty();
+        }
+        if (o.getClass().isArray()) {
+            return Array.getLength(o) == 0;
+        }
+        return false;
     }
 
     /**
