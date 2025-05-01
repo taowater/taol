@@ -68,7 +68,7 @@ public class SplitUtil {
      * @return 分割结果
      */
     public static <T> List<T> split(Object obj, String delimiter, Function<String, T> action, boolean distinct) {
-        String str = Optional.ofNullable(obj).filter(e -> EmptyUtil.isNotEmpty(obj)).map(String::valueOf).orElse(null);
+        String str = Optional.ofNullable(obj).map(String::valueOf).orElse(null);
         if (Objects.isNull(str)) {
             return new ArrayList<>();
         }
