@@ -7,9 +7,7 @@ import lombok.experimental.UtilityClass;
 
 import java.lang.invoke.*;
 import java.lang.reflect.Field;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -21,16 +19,6 @@ import java.util.function.Function;
  */
 @UtilityClass
 public class GetSetHelper {
-
-
-    /**
-     * getter 缓存
-     */
-    private static final Map<String, Function<?, ?>> GETTER_CACHE = new ConcurrentHashMap<>();
-    /**
-     * setter 的缓存
-     */
-    private static final Map<String, BiConsumer<?, ?>> SETTER_CACHE = new ConcurrentHashMap<>();
 
 
     public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, Field field) {
@@ -48,15 +36,14 @@ public class GetSetHelper {
     }
 
     public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName, Class<R> fieldType) {
-        String cacheKey = targetClass.getName() + "#" + fieldName;
-        return (Function<T, R>) GETTER_CACHE.computeIfAbsent(cacheKey, k -> createGetterLambda(targetClass, fieldName, fieldType));
+        return (Function<T, R>) createGetterLambda(targetClass, fieldName, fieldType);
     }
 
 
-    private static <T> Function<T, ?> createGetterLambda(Class<T> targetClass, String fieldName, Class<?> fieldType) {
+    private static <T, R> Function<T, R> createGetterLambda(Class<T> targetClass, String fieldName, Class<R> fieldType) {
         try {
             if (fieldType == null) {
-                fieldType = ReflectUtil.getFieldType(targetClass, fieldName);
+                fieldType = (Class<R>) ReflectUtil.getFieldType(targetClass, fieldName);
             }
 
             if (fieldType == null) {
@@ -77,7 +64,7 @@ public class GetSetHelper {
                     handle,
                     MethodType.methodType(fieldType, targetClass)
             );
-            return (Function<T, ?>) callSite.getTarget().invokeExact();
+            return (Function<T, R>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
             throw new RuntimeException("Failed to create getter for field: " + fieldName, e);
         }
@@ -100,7 +87,7 @@ public class GetSetHelper {
     @SuppressWarnings("unchecked")
     public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName, Class<P> fieldType) {
         String cacheKey = targetClass.getName() + "#" + fieldName;
-        return (BiConsumer<T, P>) SETTER_CACHE.computeIfAbsent(cacheKey, k -> createSetterLambda(targetClass, fieldName, fieldType));
+        return createSetterLambda(targetClass, fieldName, fieldType);
     }
 
     private static <T, P> BiConsumer<T, P> createSetterLambda(Class<T> targetClass, String fieldName, Class<P> fieldType) {

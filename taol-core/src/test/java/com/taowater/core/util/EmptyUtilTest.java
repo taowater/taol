@@ -1,6 +1,6 @@
 package com.taowater.core.util;
 
-import com.taowater.taol.core.function.Emptyable;
+import com.taowater.taol.core.inter.Emptyable;
 import com.taowater.taol.core.util.EmptyUtil;
 import lombok.Builder;
 import lombok.Data;

@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.taowater</groupId>
         <artifactId>taol</artifactId>
-        <version>0.2.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>convert-test</artifactId>
@@ -20,14 +20,14 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.github.taowater</groupId>
+            <artifactId>taol-core</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
             <groupId>io.vavr</groupId>
             <artifactId>vavr</artifactId>
             <version>0.10.6</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.taowater</groupId>
-            <artifactId>taol-core</artifactId>
-            <version>0.2.0</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>

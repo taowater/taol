@@ -1,7 +1,7 @@
 package com.taowater.taol.core.util;
 
 
-import com.taowater.taol.core.function.Emptyable;
+import com.taowater.taol.core.inter.Emptyable;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;

@@ -1,4 +1,4 @@
-package com.taowater.taol.core.function;
+package com.taowater.taol.core.inter;
 
 /**
  * 可能为空的定义

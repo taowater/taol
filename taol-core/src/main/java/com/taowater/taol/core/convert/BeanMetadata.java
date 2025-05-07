@@ -26,7 +26,7 @@ public class BeanMetadata {
     /**
      * 类的全限定类名与类的字段信息缓存
      */
-    private static final Map<String, BeanMetadata> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, BeanMetadata> CACHE = new ConcurrentHashMap<>();
     @Setter
     private Class<?> clazz;
     /**
@@ -35,7 +35,7 @@ public class BeanMetadata {
     private final Map<String, FieldMetadata> fieldMap = new LinkedHashMap<>();
 
     public static BeanMetadata of(Class<?> clazz) {
-        return CACHE.computeIfAbsent(clazz.getName(), k -> new BeanMetadata(clazz));
+        return CACHE.computeIfAbsent(clazz, k -> new BeanMetadata(clazz));
     }
 
     public BeanMetadata(final Class<?> clazz) {

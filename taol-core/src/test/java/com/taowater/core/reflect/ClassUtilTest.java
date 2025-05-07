@@ -1,6 +1,6 @@
 package com.taowater.core.reflect;
 
-import com.taowater.taol.core.reflect.GenericTypeUtil;
+import com.taowater.taol.core.reflect.TypeUtil;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -11,17 +11,17 @@ class ClassUtilTest {
 
     interface InterfaceA<T> {
         default Class<T> getAType() {
-            return (Class<T>) GenericTypeUtil.getTypeArgument(this.getClass(), InterfaceA.class, 0);
+            return (Class<T>) TypeUtil.getTypeArgument(this.getClass(), InterfaceA.class, 0);
         }
     }
 
     interface InterfaceB<T, Y> {
         default Class<T> getBType() {
-            return (Class<T>) GenericTypeUtil.getTypeArgument(this.getClass(), InterfaceB.class, 0);
+            return (Class<T>) TypeUtil.getTypeArgument(this.getClass(), InterfaceB.class, 0);
         }
 
         default Class<Y> getB2Type() {
-            return (Class<Y>) GenericTypeUtil.getTypeArgument(this.getClass(), InterfaceB.class, 1);
+            return (Class<Y>) TypeUtil.getTypeArgument(this.getClass(), InterfaceB.class, 1);
         }
     }
 

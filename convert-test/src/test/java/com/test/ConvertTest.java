@@ -8,18 +8,37 @@ import com.test.bean.Bean1;
 import com.test.bean.Bean2;
 import com.test.bean.BeanMapper;
 import io.vavr.Function2;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class ConvertTest {
+class ConvertTest {
 
-    public static void main(String[] args) {
-
+    @Test
+    public void test1() {
 
         Bean1 bean1 = getBean1();
 
+        Bean2 bean2 = new Bean2();
+
+        System.out.println("taol:" + ConvertUtil.convert(bean1, Bean2.class));
+        Bean2 hutoolBean2 = BeanUtil.copyProperties(bean1, Bean2.class);
+        System.out.println("hutool:" + hutoolBean2);
+        BeanUtils.copyProperties(bean1, bean2);
+        System.out.println("spring:" + bean2);
+        Bean2 bean3 = new Bean2();
+        BeanCopier.create(bean1, bean3, null).copy();
+        System.out.println("cglib:" + bean3);
+        System.out.println("mapstruct:" + BeanMapper.INSTANCE.to(bean1));
+
+    }
+
+    @Test
+    public void test2() {
+
+        Bean1 bean1 = getBean1();
 
         Bean2 bean2 = new Bean2();
 
