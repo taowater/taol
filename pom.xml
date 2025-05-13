@@ -23,7 +23,7 @@
     </modules>
 
     <properties>
-        <revision>0.2.0</revision>
+        <revision>0.2.1</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>8</java.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -31,6 +31,7 @@
         <maven-javadoc-plugin.version>3.7.0</maven-javadoc-plugin.version>
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
         <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
+        <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
 
         <lombok.version>1.18.38</lombok.version>
         <junit.version>5.11.4</junit.version>
@@ -176,9 +177,12 @@
             <plugin>
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.6.0</version>
+                <version>${central-publishing-maven-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
+                    <excludeArtifacts>
+                        <artifact>convert-test</artifact>
+                    </excludeArtifacts>
                     <publishingServerId>central</publishingServerId>
                     <waitUntil>validated</waitUntil>
                     <!--                    <autoPublish>true</autoPublish>-->

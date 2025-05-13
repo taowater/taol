@@ -53,7 +53,7 @@ class ConvertTest {
         System.out.println("mapstruct:" + BeanMapper.INSTANCE.to(bean1));
         Function2<String, BiConsumer<Object, Object>, Void> testFun = (name, fun) -> {
             long start = System.currentTimeMillis();
-            for (int i = 0; i < 100000; i++) {
+            for (int i = 0; i < 10000; i++) {
                 fun.accept(bean1, bean2);
             }
             long end = System.currentTimeMillis();
