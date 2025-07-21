@@ -27,7 +27,7 @@ public class LambdaUtil {
     /**
      * 类型λ缓存
      */
-    private static final Map<String, SerializedLambda> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<? extends Serializable>, SerializedLambda> CACHE = new ConcurrentHashMap<>();
 
     /**
      * 返回值缓存
@@ -50,9 +50,10 @@ public class LambdaUtil {
      * @return {@link SerializedLambda}
      */
     public static <S extends Serializable> SerializedLambda getSerializedLambda(S fun) {
-        return CACHE.computeIfAbsent(fun.getClass().getName(), c -> {
+
+        return CACHE.computeIfAbsent(fun.getClass(), c -> {
             try {
-                Method method = fun.getClass().getDeclaredMethod("writeReplace");
+                Method method = c.getDeclaredMethod("writeReplace");
                 method.setAccessible(true);
                 return (SerializedLambda) method.invoke(fun);
             } catch (Exception e) {

@@ -36,7 +36,7 @@ public class GetSetHelper {
     }
 
     public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName, Class<R> fieldType) {
-        return (Function<T, R>) createGetterLambda(targetClass, fieldName, fieldType);
+        return createGetterLambda(targetClass, fieldName, fieldType);
     }
 
 
@@ -49,11 +49,22 @@ public class GetSetHelper {
             if (fieldType == null) {
                 return null;
             }
-            String getterName = ClassUtil.getGetMethodName(fieldName);
 
+            String getterName = ClassUtil.getGetMethodName(fieldName);
             // 2. 查找方法
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle handle = lookup.findVirtual(targetClass, getterName, MethodType.methodType(fieldType));
+            MethodHandle handle = null;
+            try {
+                handle = lookup.findVirtual(targetClass, getterName, MethodType.methodType(fieldType));
+            } catch (NoSuchMethodException noSuchMethodException) {
+                // 如果是离谱的原生布尔类型，兼容lombok的isXX
+                if (fieldType.equals(boolean.class)) {
+                    getterName = ClassUtil.getPrimitiveBooleanGetMethodName(fieldName);
+                    handle = lookup.findVirtual(targetClass, getterName, MethodType.methodType(fieldType));
+                } else {
+                    throw noSuchMethodException;
+                }
+            }
 
             // 3. 生成Lambda
             CallSite callSite = LambdaMetafactory.metafactory(

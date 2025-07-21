@@ -86,6 +86,13 @@ public class ClassUtil {
         return "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
 
+    /**
+     * 获取原生boolean-get方法名
+     */
+    public static String getPrimitiveBooleanGetMethodName(String fieldName) {
+        return "is" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+    }
+
     public static String getSetMethodName(String fieldName) {
         return "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
