@@ -6,6 +6,7 @@
 
     <groupId>io.github.taowater</groupId>
     <artifactId>taol</artifactId>
+    <name>taol</name>
     <packaging>pom</packaging>
     <version>${revision}</version>
     <description>工具库</description>

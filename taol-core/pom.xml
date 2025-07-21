@@ -11,6 +11,7 @@
 
     <artifactId>taol-core</artifactId>
     <version>${revision}</version>
+    <name>taol-core</name>
     <packaging>jar</packaging>
     <description>工具库核心</description>
 </project>
