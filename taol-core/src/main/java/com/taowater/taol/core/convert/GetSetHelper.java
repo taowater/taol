@@ -77,7 +77,7 @@ public class GetSetHelper {
             );
             return (Function<T, R>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
-            throw new RuntimeException("Failed to create getter for field: " + fieldName, e);
+            throw new CreateLambdaException(e);
         }
     }
 
@@ -97,7 +97,6 @@ public class GetSetHelper {
      */
     @SuppressWarnings("unchecked")
     public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName, Class<P> fieldType) {
-        String cacheKey = targetClass.getName() + "#" + fieldName;
         return createSetterLambda(targetClass, fieldName, fieldType);
     }
 
@@ -149,8 +148,7 @@ public class GetSetHelper {
             }
             return (BiConsumer<T, P>) callSite.getTarget().invokeExact();
         } catch (Throwable e) {
-//            throw new RuntimeException("Failed to create setter for field: " + fieldName, e);
-            return null;
+            throw new CreateLambdaException(e);
         }
     }
 }
