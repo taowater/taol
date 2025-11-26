@@ -2,8 +2,11 @@ package com.taowater.taol.core.reflect;
 
 import lombok.experimental.UtilityClass;
 
+import java.lang.invoke.*;
 import java.lang.reflect.*;
-import java.util.Optional;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 
 /**
@@ -15,6 +18,9 @@ import java.util.Optional;
 @UtilityClass
 public class ClassUtil {
 
+
+    private static final Map<Class<?>, Supplier<?>> CACHE = new ConcurrentHashMap<>();
+
     /**
      * 根据类型创建实例
      *
@@ -22,19 +28,41 @@ public class ClassUtil {
      * @return {@link T}
      */
     public static <T> T newInstance(Class<T> clazz) {
-        return Optional.of(clazz).map(c -> {
+        Supplier<T> supplier = getConstructor(clazz);
+        return supplier.get();
+    }
+
+    /**
+     * 获取空参构造器
+     *
+     * @param clazz 类型
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Supplier<T> getConstructor(Class<T> clazz) {
+
+        return (Supplier<T>) CACHE.computeIfAbsent(clazz, cls -> {
             try {
-                return c.getConstructor();
-            } catch (NoSuchMethodException e) {
-                return null;
+                Constructor<T> cons = clazz.getDeclaredConstructor();
+                cons.setAccessible(true);
+
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                MethodHandle constructorHandle = lookup.unreflectConstructor(cons);
+
+                CallSite site = LambdaMetafactory.metafactory(
+                        lookup,
+                        "get",
+                        MethodType.methodType(Supplier.class),
+                        MethodType.methodType(Object.class),
+                        constructorHandle,
+                        MethodType.methodType(clazz)
+                );
+                return (Supplier<T>) site.getTarget().invokeExact();
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
             }
-        }).map(c -> {
-            try {
-                return c.newInstance();
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                return null;
-            }
-        }).orElse(null);
+        });
+
     }
 
     /**
