@@ -18,6 +18,7 @@ import java.util.function.Function;
  * @author zhu56
  */
 @UtilityClass
+@SuppressWarnings("unchecked")
 public class GetSetHelper {
 
 

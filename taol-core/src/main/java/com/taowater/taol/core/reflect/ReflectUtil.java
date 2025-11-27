@@ -5,6 +5,7 @@ import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Field;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,7 +47,10 @@ public class ReflectUtil {
         if (EmptyUtil.isEmpty(fields)) {
             return null;
         }
-        return fields.stream().filter(Objects::nonNull).filter(e -> e.getName().equals(name)).findFirst().orElse(null);
+        return fields.stream().filter(Objects::nonNull).filter(e -> e.getName().equals(name)).findFirst().orElseThrow(() -> {
+            String msg = MessageFormat.format("The field \"{0}\" does not exist in Class {1}", name, beanClass.getName());
+            return new RuntimeException(msg);
+        });
     }
 
     public static Class<?> getFieldType(Class<?> beanClass, String name) {
