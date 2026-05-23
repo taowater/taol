@@ -8,7 +8,6 @@ import lombok.experimental.UtilityClass;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -67,7 +66,9 @@ public class ConvertUtil {
                 return;
             }
             Object o = getter.apply(source);
-            Optional.of(o).ifPresent(e -> setter.accept(target, e));
+            if (o != null) {
+                setter.accept(target, o);
+            }
         });
     }
 }
