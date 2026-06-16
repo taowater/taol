@@ -5,11 +5,8 @@ import com.taowater.taol.core.reflect.AssignableUtil;
 import com.taowater.taol.core.reflect.ClassUtil;
 import lombok.experimental.UtilityClass;
 
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 /**
  * 转换工具类
@@ -44,31 +41,20 @@ public class ConvertUtil {
         if (Objects.isNull(source) || Objects.isNull(target)) {
             return;
         }
-        BeanMetadata sourceMetadata = BeanMetadata.of(source.getClass());
-        BeanMetadata targetMetadata = BeanMetadata.of(target.getClass());
+        Class<?> sourceClass = source.getClass();
+        Class<?> targetClass = target.getClass();
+        BeanMetadata sourceMetadata = BeanMetadata.of(sourceClass);
+        BeanMetadata targetMetadata = BeanMetadata.of(targetClass);
         Map<String, FieldMetadata> fieldMap = targetMetadata.getFieldMap();
-        fieldMap.forEach((k, v) -> {
+        fieldMap.forEach((k, targetField) -> {
             FieldMetadata sourceField = sourceMetadata.getField(k);
             if (sourceField == null) {
                 return;
             }
-            Type sourceFieldType = sourceField.getType();
-            Type targetFieldType = v.getType();
-            if (!AssignableUtil.isAssignable(sourceFieldType, targetFieldType)) {
+            if (!AssignableUtil.isAssignable(sourceField.getType(), targetField.getType())) {
                 return;
             }
-            BiConsumer<T, Object> setter = (BiConsumer<T, Object>) targetMetadata.getSetter(k);
-            if (Objects.isNull(setter)) {
-                return;
-            }
-            Function<S, Object> getter = (Function<S, Object>) sourceMetadata.getGetter(k);
-            if (Objects.isNull(getter)) {
-                return;
-            }
-            Object o = getter.apply(source);
-            if (o != null) {
-                setter.accept(target, o);
-            }
+            FieldCopyHelper.copy(source, target, sourceClass, targetClass, sourceField, targetField);
         });
     }
 }

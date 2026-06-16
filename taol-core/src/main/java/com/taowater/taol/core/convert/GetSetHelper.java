@@ -1,153 +1,156 @@
 package com.taowater.taol.core.convert;
 
-import com.taowater.taol.core.reflect.ClassUtil;
+import com.taowater.taol.core.reflect.MethodHandleHelper;
 import com.taowater.taol.core.reflect.MethodTypeUtil;
-import com.taowater.taol.core.reflect.ReflectUtil;
 import lombok.experimental.UtilityClass;
 
-import java.lang.invoke.*;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * get/set构建帮助
- *
- * @author zhu56
+ * get/set 构建帮助
  */
 @UtilityClass
 @SuppressWarnings("unchecked")
 public class GetSetHelper {
 
+    private static final MethodType METHOD_TYPE_OBJECT_GETTER =
+            MethodType.methodType(Object.class, Object.class);
+    private static final MethodType METHOD_TYPE_OBJECT_SETTER =
+            MethodType.methodType(void.class, Object.class, Object.class);
+
+    public static Object buildGetterAccessor(Class<?> targetClass, Method method) {
+        if (method == null) {
+            return null;
+        }
+        if (PrimitiveAccessorHelper.isPrimitiveGetter(method.getReturnType())) {
+            return PrimitiveAccessorHelper.buildGetter(targetClass, method);
+        }
+        return createObjectGetter(targetClass, method);
+    }
+
+    public static Object buildSetterAccessor(Class<?> targetClass, Method method) {
+        if (method == null) {
+            return null;
+        }
+        Class<?> paramType = method.getParameterTypes()[0];
+        if (PrimitiveAccessorHelper.isPrimitiveSetter(paramType)) {
+            return PrimitiveAccessorHelper.buildSetter(targetClass, method, paramType);
+        }
+        return createObjectSetter(targetClass, method, paramType);
+    }
 
     public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, Field field) {
         if (Objects.isNull(field)) {
             return null;
         }
-        return buildGetter(targetClass, field.getName(), (Class<R>) field.getType());
+        return buildGetter(targetClass, field.getName());
     }
 
-    /**
-     * 动态构建Getter Lambda
-     */
     public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName) {
         return buildGetter(targetClass, fieldName, null);
     }
 
     public static <T, R> Function<T, R> buildGetter(Class<T> targetClass, String fieldName, Class<R> fieldType) {
-        return createGetterLambda(targetClass, fieldName, fieldType);
-    }
-
-
-    private static <T, R> Function<T, R> createGetterLambda(Class<T> targetClass, String fieldName, Class<R> fieldType) {
-        try {
-            if (fieldType == null) {
-                fieldType = (Class<R>) ReflectUtil.getFieldType(targetClass, fieldName);
-            }
-
-            if (fieldType == null) {
-                return null;
-            }
-
-            String getterName = ClassUtil.getGetMethodName(fieldName);
-            // 2. 查找方法
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle handle = null;
-            try {
-                handle = lookup.findVirtual(targetClass, getterName, MethodType.methodType(fieldType));
-            } catch (NoSuchMethodException noSuchMethodException) {
-                // 如果是离谱的原生布尔类型，兼容lombok的isXX
-                if (fieldType.equals(boolean.class)) {
-                    getterName = ClassUtil.getPrimitiveBooleanGetMethodName(fieldName);
-                    handle = lookup.findVirtual(targetClass, getterName, MethodType.methodType(fieldType));
-                } else {
-                    throw noSuchMethodException;
-                }
-            }
-
-            // 3. 生成Lambda
-            CallSite callSite = LambdaMetafactory.metafactory(
-                    lookup,
-                    "apply",
-                    MethodType.methodType(Function.class),
-                    MethodTypeUtil.functionType(1),
-                    handle,
-                    MethodType.methodType(fieldType, targetClass)
-            );
-            return (Function<T, R>) callSite.getTarget().invokeExact();
-        } catch (Throwable e) {
-            throw new CreateLambdaException(e);
+        Method method = BeanMethodResolver.resolveGetter(targetClass, fieldName);
+        if (method == null) {
+            return null;
         }
+        return (Function<T, R>) asFunctionGetter(buildGetterAccessor(targetClass, method));
     }
 
     public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, Field field) {
         if (Objects.isNull(field)) {
             return null;
         }
-        return buildSetter(targetClass, field.getName(), (Class<P>) field.getType());
+        return buildSetter(targetClass, field.getName());
     }
 
     public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName) {
         return buildSetter(targetClass, fieldName, null);
     }
 
-    /**
-     * 动态构建Setter Lambda
-     */
-    @SuppressWarnings("unchecked")
     public static <T, P> BiConsumer<T, P> buildSetter(Class<T> targetClass, String fieldName, Class<P> fieldType) {
-        return createSetterLambda(targetClass, fieldName, fieldType);
+        Method method = BeanMethodResolver.resolveSetter(targetClass, fieldName);
+        if (method == null) {
+            return null;
+        }
+        return (BiConsumer<T, P>) asBiConsumerSetter(buildSetterAccessor(targetClass, method));
     }
 
-    private static <T, P> BiConsumer<T, P> createSetterLambda(Class<T> targetClass, String fieldName, Class<P> fieldType) {
+    public static Function<?, ?> asFunctionGetter(Object accessor) {
+        if (accessor == null) {
+            return null;
+        }
+        if (accessor instanceof Function) {
+            return (Function<?, ?>) accessor;
+        }
+        Function<?, ?> primitiveGetter = PrimitiveAccessorHelper.asFunctionGetter(accessor);
+        if (primitiveGetter != null) {
+            return primitiveGetter;
+        }
+        throw new CreateLambdaException("unsupported getter accessor: " + accessor.getClass());
+    }
+
+    public static BiConsumer<?, ?> asBiConsumerSetter(Object accessor) {
+        if (accessor == null) {
+            return null;
+        }
+        if (accessor instanceof BiConsumer) {
+            return (BiConsumer<?, ?>) accessor;
+        }
+        BiConsumer<?, ?> primitiveSetter = PrimitiveAccessorHelper.asBiConsumerSetter(accessor);
+        if (primitiveSetter != null) {
+            return primitiveSetter;
+        }
+        throw new CreateLambdaException("unsupported setter accessor: " + accessor.getClass());
+    }
+
+    private static <T> Function<T, ?> createObjectGetter(Class<T> targetClass, Method method) {
         try {
-            String setterName = ClassUtil.getSetMethodName(fieldName);
+            MethodHandleHelper.MethodAccess access = MethodHandleHelper.access(method);
+            MethodType instantiatedMethodType = MethodType.methodType(method.getReturnType(), targetClass);
+            CallSite callSite = LambdaMetafactory.metafactory(
+                    access.getLookup(),
+                    "apply",
+                    MethodType.methodType(Function.class),
+                    METHOD_TYPE_OBJECT_GETTER,
+                    access.getHandle(),
+                    instantiatedMethodType
+            );
+            return (Function<T, ?>) callSite.getTarget().invoke();
+        } catch (Throwable e) {
+            throw new CreateLambdaException(e);
+        }
+    }
 
-            if (fieldType == null) {
-                fieldType = (Class<P>) ReflectUtil.getFieldType(targetClass, fieldName);
+    private static <T, P> BiConsumer<T, P> createObjectSetter(Class<T> targetClass, Method method, Class<P> paramType) {
+        try {
+            MethodType methodType = method.getReturnType() == void.class
+                    ? MethodTypeUtil.voidReturnType(paramType)
+                    : MethodType.methodType(method.getReturnType(), paramType);
+            MethodHandleHelper.MethodAccess access = MethodHandleHelper.access(method);
+            MethodHandle handle = access.getHandle();
+            if (!handle.type().equals(MethodType.methodType(method.getReturnType(), targetClass, paramType))) {
+                method.setAccessible(true);
+                handle = access.getLookup().findVirtual(targetClass, method.getName(), methodType);
             }
-            if (fieldType == null) {
-                return null;
-            }
-            boolean chain = false;
-            MethodHandle handle;
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            try {
-                handle = lookup.findVirtual(targetClass, setterName, MethodTypeUtil.voidReturnType(fieldType));
-            } catch (NoSuchMethodException e) {
-                // 如果找不到普通setter，尝试查找链式调用的setter
-                handle = lookup.findVirtual(targetClass, setterName, MethodType.methodType(targetClass, fieldType));
-                chain = true;
-            }
-            if (handle == null) {
-                return null;
-            }
-
-
-            CallSite callSite = chain ?
-                    LambdaMetafactory.metafactory(
-                            lookup,
-                            "apply",
-                            MethodType.methodType(BiFunction.class),
-                            MethodTypeUtil.functionType(2),
-                            handle,
-                            MethodType.methodType(targetClass, targetClass, fieldType)
-                    ) :
-                    LambdaMetafactory.metafactory(
-                            lookup,
-                            "accept",
-                            MethodType.methodType(BiConsumer.class),
-                            MethodTypeUtil.consumerType(2),
-                            handle,
-                            MethodTypeUtil.voidReturnType(targetClass, fieldType)
-                    );
-
-            if (chain) {
-                return ((BiFunction<T, P, T>) callSite.getTarget().invokeExact())::apply;
-            }
-            return (BiConsumer<T, P>) callSite.getTarget().invokeExact();
+            CallSite callSite = LambdaMetafactory.metafactory(
+                    access.getLookup(),
+                    "accept",
+                    MethodType.methodType(BiConsumer.class),
+                    METHOD_TYPE_OBJECT_SETTER,
+                    handle,
+                    MethodType.methodType(void.class, targetClass, paramType)
+            );
+            return (BiConsumer<T, P>) callSite.getTarget().invoke();
         } catch (Throwable e) {
             throw new CreateLambdaException(e);
         }

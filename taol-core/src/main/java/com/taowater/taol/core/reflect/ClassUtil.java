@@ -33,6 +33,9 @@ public class ClassUtil {
             return null;
         }
         Supplier<T> supplier = getConstructor(clazz);
+        if (Objects.isNull(supplier)) {
+            return null;
+        }
         return supplier.get();
     }
 
@@ -48,20 +51,16 @@ public class ClassUtil {
         return (Supplier<T>) CACHE.computeIfAbsent(clazz, cls -> {
             try {
                 Constructor<T> cons = clazz.getDeclaredConstructor();
-                cons.setAccessible(true);
-
-                MethodHandles.Lookup lookup = MethodHandles.lookup();
-                MethodHandle constructorHandle = lookup.unreflectConstructor(cons);
-
+                MethodHandleHelper.ConstructorAccess access = MethodHandleHelper.access(cons);
                 CallSite site = LambdaMetafactory.metafactory(
-                        lookup,
+                        access.getLookup(),
                         "get",
                         MethodType.methodType(Supplier.class),
                         MethodType.methodType(Object.class),
-                        constructorHandle,
+                        access.getHandle(),
                         MethodType.methodType(clazz)
                 );
-                return (Supplier<T>) site.getTarget().invokeExact();
+                return (Supplier<T>) site.getTarget().invoke();
             } catch (Throwable e) {
                 throw new RuntimeException(e);
             }

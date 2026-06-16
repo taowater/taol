@@ -1,12 +1,14 @@
 package com.taowater.taol.core.reflect;
 
 import com.taowater.taol.core.util.CollUtil;
-import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -44,7 +46,7 @@ public class ReflectUtil {
 
     public static Field getField(Class<?> beanClass, String name) {
         List<Field> fields = getFields(beanClass);
-        if (EmptyUtil.isEmpty(fields)) {
+        if (Objects.isNull(fields)) {
             return null;
         }
         return fields.stream().filter(Objects::nonNull).filter(e -> e.getName().equals(name)).findFirst().orElseThrow(() -> {
@@ -54,6 +56,10 @@ public class ReflectUtil {
     }
 
     public static Class<?> getFieldType(Class<?> beanClass, String name) {
-        return Optional.ofNullable(getField(beanClass, name)).map(Field::getType).orElse(null);
+        Field field = getField(beanClass, name);
+        if (Objects.isNull(field)) {
+            return null;
+        }
+        return field.getType();
     }
 }

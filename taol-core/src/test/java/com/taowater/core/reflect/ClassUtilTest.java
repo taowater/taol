@@ -1,11 +1,13 @@
 package com.taowater.core.reflect;
 
+import com.taowater.taol.core.reflect.ClassUtil;
 import com.taowater.taol.core.reflect.TypeUtil;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class ClassUtilTest {
 
@@ -47,6 +49,15 @@ class ClassUtilTest {
     }
 
     static class ClassE implements InterfaceD<String, Long> {
+    }
+
+    @Test
+    void newInstancePackagePrivateClass() {
+        PackagePrivateBean bean = ClassUtil.newInstance(PackagePrivateBean.class);
+        assertNotNull(bean);
+    }
+
+    static class PackagePrivateBean {
     }
 
     @Test
