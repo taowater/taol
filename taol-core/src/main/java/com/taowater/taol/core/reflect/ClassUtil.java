@@ -5,6 +5,7 @@ import lombok.experimental.UtilityClass;
 import java.lang.invoke.*;
 import java.lang.reflect.*;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -28,6 +29,9 @@ public class ClassUtil {
      * @return {@link T}
      */
     public static <T> T newInstance(Class<T> clazz) {
+        if (Objects.isNull(clazz)) {
+            return null;
+        }
         Supplier<T> supplier = getConstructor(clazz);
         return supplier.get();
     }
