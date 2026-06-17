@@ -95,7 +95,7 @@ public class AssignableUtil {
         }
         Class<?> targetWrapper = target;
         if (target.isPrimitive()) {
-            targetWrapper = getPrimitive(target);
+            targetWrapper = WRAPPER.get(target);
         }
         return Objects.equals(sourceWrapper, targetWrapper) || targetWrapper.isAssignableFrom(sourceWrapper);
     }
