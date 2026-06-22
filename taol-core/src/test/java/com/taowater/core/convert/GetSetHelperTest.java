@@ -2,12 +2,15 @@ package com.taowater.core.convert;
 
 import com.taowater.taol.core.convert.BeanMetadata;
 import com.taowater.taol.core.convert.ConvertUtil;
+import com.taowater.taol.core.convert.CopyException;
 import com.taowater.taol.core.convert.GetSetHelper;
 import com.taowater.taol.core.function.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -165,10 +168,96 @@ class GetSetHelperTest {
         assertEquals(7, target.getAge());
     }
 
+    @Test
+    void convertCopiesNumericValuesByTargetType() {
+        NumericSource source = new NumericSource();
+        source.setId(1);
+        source.setAge(2L);
+        source.setCount(3);
+
+        NumericTarget target = ConvertUtil.convert(source, NumericTarget.class);
+
+        assertEquals(Long.valueOf(1L), target.getId());
+        assertEquals(Integer.valueOf(2), target.getAge());
+        assertEquals(Long.valueOf(3L), target.getCount());
+    }
+
+    @Test
+    void convertThrowsWhenNumericValueOverflowsTargetType() {
+        OverflowSource source = new OverflowSource();
+        source.setA(2147483648L);
+
+        assertThrows(CopyException.class, () -> ConvertUtil.convert(source, IntTarget.class));
+    }
+
+    @Test
+    void convertCopiesListElementsByTargetGenericType() {
+        ListSource source = new ListSource();
+        source.setIds(Arrays.asList(1L, 2L, 3L));
+        source.setCodes(Arrays.asList(4, 5, 6));
+
+        ListTarget target = ConvertUtil.convert(source, ListTarget.class);
+
+        assertEquals(Arrays.asList(1, 2, 3), target.getIds());
+        assertEquals(Integer.class, target.getIds().get(0).getClass());
+        assertEquals(Arrays.asList(4L, 5L, 6L), target.getCodes());
+        assertEquals(Long.class, target.getCodes().get(0).getClass());
+    }
+
+    @Test
+    void convertThrowsWhenListElementOverflowsTargetGenericType() {
+        ListSource source = new ListSource();
+        source.setIds(Arrays.asList(2147483648L));
+
+        assertThrows(CopyException.class, () -> ConvertUtil.convert(source, ListTarget.class));
+    }
+
     @Getter
     @Setter
     static class PrimitiveTarget {
         private int age;
         private Long id;
+    }
+
+    @Getter
+    @Setter
+    static class NumericSource {
+        private Integer id;
+        private Long age;
+        private int count;
+    }
+
+    @Getter
+    @Setter
+    static class NumericTarget {
+        private Long id;
+        private Integer age;
+        private Long count;
+    }
+
+    @Getter
+    @Setter
+    static class OverflowSource {
+        private Long a;
+    }
+
+    @Getter
+    @Setter
+    static class IntTarget {
+        private int a;
+    }
+
+    @Getter
+    @Setter
+    static class ListSource {
+        private List<Long> ids;
+        private List<Integer> codes;
+    }
+
+    @Getter
+    @Setter
+    static class ListTarget {
+        private List<Integer> ids;
+        private List<Long> codes;
     }
 }

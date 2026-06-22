@@ -8,7 +8,6 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * 判断赋值工具
@@ -20,7 +19,6 @@ public class AssignableUtil {
 
     private static final Map<Class<?>, Class<?>> WRAPPER = new HashMap<>();
     private static final Map<String, Boolean> RESULT = new HashMap<>();
-    public static final Map<Class<?>, Map<Class<?>, Function<?, ?>>> CONVERT = new HashMap<>();
 
     static {
         WRAPPER.put(int.class, Integer.class);
@@ -31,15 +29,6 @@ public class AssignableUtil {
         WRAPPER.put(byte.class, Byte.class);
         WRAPPER.put(short.class, Short.class);
         WRAPPER.put(char.class, Character.class);
-
-
-        Map<Class<?>, Function<?, ?>> map = new HashMap<>();
-        map.put(Byte.class, (Integer e) -> e.byteValue());
-        map.put(Short.class, (Integer e) -> e.shortValue());
-        map.put(Float.class, (Integer e) -> e.floatValue());
-        map.put(Double.class, (Integer e) -> e.doubleValue());
-        map.put(Long.class, (Integer e) -> e.longValue());
-        CONVERT.put(Integer.class, map);
     }
 
 

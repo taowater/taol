@@ -65,7 +65,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyByte(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -82,7 +82,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyShort(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -99,7 +99,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyChar(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -116,7 +116,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyInt(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -133,7 +133,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyLong(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -150,7 +150,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyFloat(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -167,7 +167,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyDouble(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -184,15 +184,7 @@ public class FieldCopyHelper {
             }
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
-    }
-
-    private static void writeBoxed(Object target, Class<?> targetClass, FieldMetadata targetField, Object value) {
-        BiConsumer<Object, Object> setter = (BiConsumer<Object, Object>) GetSetHelper.asBiConsumerSetter(
-                targetField.ensureSetter(targetClass));
-        if (setter != null) {
-            setter.accept(target, value);
-        }
+        writePrimitiveValue(target, targetClass, sourceField, targetField, value);
     }
 
     private static void copyObject(Object source, Object target, Class<?> sourceClass, Class<?> targetClass,
@@ -206,6 +198,40 @@ public class FieldCopyHelper {
         if (value == null) {
             return;
         }
-        writeBoxed(target, targetClass, targetField, value);
+        writeConverted(target, targetClass, sourceField, targetField, value);
+    }
+
+    private static void writePrimitiveValue(Object target, Class<?> targetClass,
+                                            FieldMetadata sourceField, FieldMetadata targetField, Object value) {
+        if (targetField.getFieldClass().isAssignableFrom(value.getClass())) {
+            writeBoxed(target, targetClass, targetField, value);
+            return;
+        }
+        writeConverted(target, targetClass, sourceField, targetField, value);
+    }
+
+    private static void writeConverted(Object target, Class<?> targetClass,
+                                       FieldMetadata sourceField, FieldMetadata targetField, Object value) {
+        Object setterAccessor = targetField.ensureSetter(targetClass);
+        if (setterAccessor == null) {
+            return;
+        }
+        CopyValueConverter.ConvertedValue convertedValue = CopyValueConverter.convert(
+                value, sourceField.getType(), targetField.getType(), sourceField.getName());
+        if (!convertedValue.isSupported()) {
+            return;
+        }
+        writeBoxed(target, setterAccessor, convertedValue.getValue());
+    }
+
+    private static void writeBoxed(Object target, Class<?> targetClass, FieldMetadata targetField, Object value) {
+        writeBoxed(target, targetField.ensureSetter(targetClass), value);
+    }
+
+    private static void writeBoxed(Object target, Object setterAccessor, Object value) {
+        BiConsumer<Object, Object> setter = (BiConsumer<Object, Object>) GetSetHelper.asBiConsumerSetter(setterAccessor);
+        if (setter != null) {
+            setter.accept(target, value);
+        }
     }
 }

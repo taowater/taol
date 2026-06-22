@@ -1,7 +1,6 @@
 package com.taowater.taol.core.convert;
 
 
-import com.taowater.taol.core.reflect.AssignableUtil;
 import com.taowater.taol.core.reflect.ClassUtil;
 import lombok.experimental.UtilityClass;
 
@@ -49,9 +48,6 @@ public class ConvertUtil {
         fieldMap.forEach((k, targetField) -> {
             FieldMetadata sourceField = sourceMetadata.getField(k);
             if (sourceField == null) {
-                return;
-            }
-            if (!AssignableUtil.isAssignable(sourceField.getType(), targetField.getType())) {
                 return;
             }
             FieldCopyHelper.copy(source, target, sourceClass, targetClass, sourceField, targetField);
