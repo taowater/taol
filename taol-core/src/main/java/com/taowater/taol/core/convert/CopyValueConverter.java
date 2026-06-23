@@ -151,7 +151,7 @@ class CopyValueConverter {
         return new ConvertedValue(true, targetArray);
     }
 
-    private static Object convertNumber(Number number, Class<?> targetClass, String path) {
+    static Object convertNumber(Number number, Class<?> targetClass, String path) {
         if (Number.class.equals(targetClass)) {
             return number;
         }
@@ -162,21 +162,51 @@ class CopyValueConverter {
             return integralDecimal(number, targetClass, path).toBigIntegerExact();
         }
         if (Byte.class.equals(targetClass)) {
+            if (number instanceof Byte) {
+                return number;
+            }
+            if (number instanceof Short || number instanceof Integer || number instanceof Long) {
+                return byteFromLong(number.longValue(), path);
+            }
             BigDecimal decimal = integralDecimal(number, targetClass, path);
             checkRange(decimal, BigDecimal.valueOf(Byte.MIN_VALUE), BigDecimal.valueOf(Byte.MAX_VALUE), targetClass, path);
             return decimal.byteValue();
         }
         if (Short.class.equals(targetClass)) {
+            if (number instanceof Short) {
+                return number;
+            }
+            if (number instanceof Byte) {
+                return number.shortValue();
+            }
+            if (number instanceof Integer || number instanceof Long) {
+                return shortFromLong(number.longValue(), path);
+            }
             BigDecimal decimal = integralDecimal(number, targetClass, path);
             checkRange(decimal, BigDecimal.valueOf(Short.MIN_VALUE), BigDecimal.valueOf(Short.MAX_VALUE), targetClass, path);
             return decimal.shortValue();
         }
         if (Integer.class.equals(targetClass)) {
+            if (number instanceof Integer) {
+                return number;
+            }
+            if (number instanceof Byte || number instanceof Short) {
+                return number.intValue();
+            }
+            if (number instanceof Long) {
+                return intFromLong(number.longValue(), path);
+            }
             BigDecimal decimal = integralDecimal(number, targetClass, path);
             checkRange(decimal, BigDecimal.valueOf(Integer.MIN_VALUE), BigDecimal.valueOf(Integer.MAX_VALUE), targetClass, path);
             return decimal.intValue();
         }
         if (Long.class.equals(targetClass)) {
+            if (number instanceof Long) {
+                return number;
+            }
+            if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
+                return number.longValue();
+            }
             BigDecimal decimal = integralDecimal(number, targetClass, path);
             checkRange(decimal, BigDecimal.valueOf(Long.MIN_VALUE), BigDecimal.valueOf(Long.MAX_VALUE), targetClass, path);
             return decimal.longValue();
@@ -185,6 +215,60 @@ class CopyValueConverter {
             return toFloatingNumber(number, targetClass, path);
         }
         return number;
+    }
+
+    static int intFromLong(long value, String path) {
+        if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
+            throw new CopyException("Cannot copy " + path + ": numeric value " + value + " overflows int");
+        }
+        return (int) value;
+    }
+
+    static short shortFromLong(long value, String path) {
+        if (value > Short.MAX_VALUE || value < Short.MIN_VALUE) {
+            throw new CopyException("Cannot copy " + path + ": numeric value " + value + " overflows short");
+        }
+        return (short) value;
+    }
+
+    static byte byteFromLong(long value, String path) {
+        if (value > Byte.MAX_VALUE || value < Byte.MIN_VALUE) {
+            throw new CopyException("Cannot copy " + path + ": numeric value " + value + " overflows byte");
+        }
+        return (byte) value;
+    }
+
+    static short shortFromInt(int value, String path) {
+        if (value > Short.MAX_VALUE || value < Short.MIN_VALUE) {
+            throw new CopyException("Cannot copy " + path + ": numeric value " + value + " overflows short");
+        }
+        return (short) value;
+    }
+
+    static byte byteFromInt(int value, String path) {
+        if (value > Byte.MAX_VALUE || value < Byte.MIN_VALUE) {
+            throw new CopyException("Cannot copy " + path + ": numeric value " + value + " overflows byte");
+        }
+        return (byte) value;
+    }
+
+    static byte byteFromShort(short value, String path) {
+        if (value > Byte.MAX_VALUE || value < Byte.MIN_VALUE) {
+            throw new CopyException("Cannot copy " + path + ": numeric value " + value + " overflows byte");
+        }
+        return (byte) value;
+    }
+
+    static float floatFromDouble(double value, String path) {
+        float result = (float) value;
+        if (Float.isNaN(result) || Float.isInfinite(result)) {
+            throw new CopyException("Cannot copy " + path + ": numeric value " + value + " overflows float");
+        }
+        return result;
+    }
+
+    static Class<?> wrapClass(Class<?> clazz) {
+        return wrap(clazz);
     }
 
     /**

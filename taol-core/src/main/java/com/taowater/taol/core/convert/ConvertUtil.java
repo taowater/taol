@@ -4,7 +4,6 @@ package com.taowater.taol.core.convert;
 import com.taowater.taol.core.reflect.ClassUtil;
 import lombok.experimental.UtilityClass;
 
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -40,17 +39,6 @@ public class ConvertUtil {
         if (Objects.isNull(source) || Objects.isNull(target)) {
             return;
         }
-        Class<?> sourceClass = source.getClass();
-        Class<?> targetClass = target.getClass();
-        BeanMetadata sourceMetadata = BeanMetadata.of(sourceClass);
-        BeanMetadata targetMetadata = BeanMetadata.of(targetClass);
-        Map<String, FieldMetadata> fieldMap = targetMetadata.getFieldMap();
-        fieldMap.forEach((k, targetField) -> {
-            FieldMetadata sourceField = sourceMetadata.getField(k);
-            if (sourceField == null) {
-                return;
-            }
-            FieldCopyHelper.copy(source, target, sourceClass, targetClass, sourceField, targetField);
-        });
+        BeanCopyPlan.of(source.getClass(), target.getClass()).copy(source, target);
     }
 }
