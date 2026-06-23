@@ -5,14 +5,8 @@ import lombok.experimental.UtilityClass;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.ObjDoubleConsumer;
-import java.util.function.ObjIntConsumer;
-import java.util.function.ObjLongConsumer;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
+import java.util.Objects;
+import java.util.function.*;
 
 /**
  * 字段拷贝，8 大基本类型走无装箱 fast path
@@ -28,8 +22,17 @@ public class FieldCopyHelper {
     }
 
     private static final Map<Class<?>, PrimitiveCopier> PRIMITIVE_COPIERS = new HashMap<>();
+    private static final Map<Class<?>, Class<?>> PRIMITIVE_WRAPPERS = new HashMap<>();
 
     static {
+        PRIMITIVE_WRAPPERS.put(boolean.class, Boolean.class);
+        PRIMITIVE_WRAPPERS.put(byte.class, Byte.class);
+        PRIMITIVE_WRAPPERS.put(short.class, Short.class);
+        PRIMITIVE_WRAPPERS.put(char.class, Character.class);
+        PRIMITIVE_WRAPPERS.put(int.class, Integer.class);
+        PRIMITIVE_WRAPPERS.put(long.class, Long.class);
+        PRIMITIVE_WRAPPERS.put(float.class, Float.class);
+        PRIMITIVE_WRAPPERS.put(double.class, Double.class);
         PRIMITIVE_COPIERS.put(boolean.class, FieldCopyHelper::copyBoolean);
         PRIMITIVE_COPIERS.put(byte.class, FieldCopyHelper::copyByte);
         PRIMITIVE_COPIERS.put(short.class, FieldCopyHelper::copyShort);
@@ -203,11 +206,26 @@ public class FieldCopyHelper {
 
     private static void writePrimitiveValue(Object target, Class<?> targetClass,
                                             FieldMetadata sourceField, FieldMetadata targetField, Object value) {
-        if (targetField.getFieldClass().isAssignableFrom(value.getClass())) {
+        if (isDirectlyAssignable(targetField.getFieldClass(), value)) {
             writeBoxed(target, targetClass, targetField, value);
             return;
         }
         writeConverted(target, targetClass, sourceField, targetField, value);
+    }
+
+    private static boolean isDirectlyAssignable(Class<?> targetFieldClass, Object value) {
+        if (value == null) {
+            return false;
+        }
+        Class<?> valueClass = value.getClass();
+        if (targetFieldClass.isAssignableFrom(valueClass)) {
+            return true;
+        }
+        if (targetFieldClass.isPrimitive()) {
+            Class<?> wrapper = PRIMITIVE_WRAPPERS.get(targetFieldClass);
+            return wrapper != null && Objects.equals(wrapper, valueClass);
+        }
+        return false;
     }
 
     private static void writeConverted(Object target, Class<?> targetClass,
@@ -219,6 +237,11 @@ public class FieldCopyHelper {
         CopyValueConverter.ConvertedValue convertedValue = CopyValueConverter.convert(
                 value, sourceField.getType(), targetField.getType(), sourceField.getName());
         if (!convertedValue.isSupported()) {
+            if (value instanceof Number && CopyValueConverter.isNumericType(targetField.getType())) {
+                throw new CopyException("Cannot copy " + sourceField.getName()
+                        + ": unsupported numeric conversion from " + value.getClass().getName()
+                        + " to " + targetField.getFieldClass().getName());
+            }
             return;
         }
         writeBoxed(target, setterAccessor, convertedValue.getValue());
