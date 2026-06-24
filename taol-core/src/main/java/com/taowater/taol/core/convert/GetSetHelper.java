@@ -15,7 +15,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * get/set 构建帮助
+ * getter/setter 的 Lambda 构建入口。
+ * <p>
+ * 基本类型 → {@link PrimitiveAccessorHelper}（无装箱 To*Function / Obj*Consumer）；
+ * 引用类型 → {@link LambdaMetafactory} 生成 Function / BiConsumer。
  */
 @UtilityClass
 @SuppressWarnings("unchecked")
@@ -26,6 +29,9 @@ public class GetSetHelper {
     private static final MethodType METHOD_TYPE_OBJECT_SETTER =
             MethodType.methodType(void.class, Object.class, Object.class);
 
+    /**
+     * 返回原始 accessor 对象，供 {@link CopyPlanFactory} 走 fast path 或后续适配。
+     */
     public static Object buildGetterAccessor(Class<?> targetClass, Method method) {
         if (method == null) {
             return null;
@@ -85,6 +91,9 @@ public class GetSetHelper {
         return (BiConsumer<T, P>) asBiConsumerSetter(buildSetterAccessor(targetClass, method));
     }
 
+    /**
+     * 将 fast path accessor 或 Function 统一适配为 Function&lt;Object, Object&gt;。
+     */
     public static Function<?, ?> asFunctionGetter(Object accessor) {
         if (accessor == null) {
             return null;
@@ -99,6 +108,9 @@ public class GetSetHelper {
         throw new CreateLambdaException("unsupported getter accessor: " + accessor.getClass());
     }
 
+    /**
+     * 将 fast path accessor 或 BiConsumer 统一适配为 BiConsumer&lt;Object, Object&gt;。
+     */
     public static BiConsumer<?, ?> asBiConsumerSetter(Object accessor) {
         if (accessor == null) {
             return null;

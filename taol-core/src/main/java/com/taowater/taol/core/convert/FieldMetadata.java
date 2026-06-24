@@ -10,7 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * 字段元信息
+ * 单字段元信息：泛型 {@link #type}、原始 {@link #fieldClass}、getter/setter 及懒加载 accessor。
  */
 @Setter
 @Getter
@@ -18,14 +18,17 @@ import java.util.function.Function;
 public class FieldMetadata {
 
     private String name;
+    /** 字段声明泛型，用于集合/数组元素类型推断。 */
     private Type type;
     private Class<?> fieldClass;
     private Method getterMethod;
     private Method setterMethod;
 
+    /** 预编译 accessor，double-checked locking 懒初始化。 */
     private volatile Object getterAccessor;
     private volatile Object setterAccessor;
 
+    /** 构建并缓存 getter Lambda（{@link GetSetHelper}）。 */
     public Object ensureGetter(Class<?> clazz) {
         if (getterAccessor != null) {
             return getterAccessor;
@@ -42,6 +45,7 @@ public class FieldMetadata {
         }
     }
 
+    /** 构建并缓存 setter Lambda（{@link GetSetHelper}）。 */
     public Object ensureSetter(Class<?> clazz) {
         if (setterAccessor != null) {
             return setterAccessor;

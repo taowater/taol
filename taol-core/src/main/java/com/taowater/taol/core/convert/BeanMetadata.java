@@ -15,7 +15,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * bean元信息
+ * Bean 字段元信息缓存：字段名、泛型类型、getter/setter 方法。
+ * 构建拷贝计划时按类加载一次，{@link FieldMetadata#ensureGetter}/{@link FieldMetadata#ensureSetter} 懒加载 Lambda accessor。
  */
 @Getter
 @EqualsAndHashCode
@@ -28,6 +29,7 @@ public class BeanMetadata {
 
     private final Map<String, FieldMetadata> fieldMap = new LinkedHashMap<>();
 
+    /** 按类缓存，解析全部字段及 getter/setter 方法。 */
     public static BeanMetadata of(Class<?> clazz) {
         return CACHE.computeIfAbsent(clazz, k -> new BeanMetadata(clazz));
     }

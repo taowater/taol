@@ -2,7 +2,8 @@ package com.taowater.taol.core.convert;
 
 import com.taowater.taol.core.function.*;
 import com.taowater.taol.core.reflect.MethodHandleHelper;
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.LambdaMetafactory;
@@ -13,10 +14,12 @@ import java.util.Map;
 import java.util.function.*;
 
 /**
- * 8 大基本类型 getter/setter 的 Lambda 构建与适配
+ * 8 大基本类型 getter/setter 的 Lambda 构建与适配。
+ * <p>
+ * 通过 {@link LambdaMetafactory} 生成 To*Function / Obj*Consumer，供 {@link NumericCopyActions} 无装箱 fast path 使用。
+ * {@link #asFunctionGetter}/{@link #asBiConsumerSetter} 仅在通用路径需要 Object 适配时才会装箱。
  */
-@UtilityClass
-@SuppressWarnings("unchecked")
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 class PrimitiveAccessorHelper {
 
     private static final Map<Class<?>, GetterInfo> GETTER_INFO_MAP = new HashMap<>();
@@ -75,6 +78,7 @@ class PrimitiveAccessorHelper {
     }
 
     static Function<?, ?> asFunctionGetter(Object accessor) {
+        // 基本类型 accessor → Function<Object,Object>，仅在通用路径使用（会装箱）
         if (accessor instanceof ToBooleanFunction) {
             return wrap((ToBooleanFunction<?>) accessor);
         }

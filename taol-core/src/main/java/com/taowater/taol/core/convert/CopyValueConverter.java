@@ -1,6 +1,8 @@
 package com.taowater.taol.core.convert;
 
 import com.taowater.taol.core.reflect.ClassUtil;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.lang.reflect.*;
 import java.math.BigDecimal;
@@ -8,8 +10,12 @@ import java.math.BigInteger;
 import java.util.*;
 
 /**
- * 拷贝值转换工具
+ * 运行时值转换：数值窄化/拓宽、数组与集合元素递归转换。
+ * <p>
+ * fast path 未覆盖的组合由此兜底；{@link CopyPlanFactory#genericConvertAction} 在运行时调用 {@link #convert}。
  */
+@SuppressWarnings("unchecked")
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 class CopyValueConverter {
 
     private static final ConvertedValue UNSUPPORTED = new ConvertedValue(false, null);
@@ -26,6 +32,11 @@ class CopyValueConverter {
         WRAPPER.put(double.class, Double.class);
     }
 
+    /**
+     * 单值转换入口。支持：数组、集合、数值、isInstance 直传；不支持则返回 UNSUPPORTED。
+     *
+     * @param path 字段名或索引路径，用于异常信息
+     */
     static ConvertedValue convert(Object value, Type sourceType, Type targetType, String path) {
         if (value == null || targetType == null) {
             return UNSUPPORTED;
@@ -59,6 +70,9 @@ class CopyValueConverter {
         return UNSUPPORTED;
     }
 
+    /**
+     * 判断类型（含数组元素、集合泛型）是否为数值类型。
+     */
     static boolean isNumericType(Type type) {
         Class<?> raw = rawClass(type);
         if (raw == null) {
@@ -97,17 +111,15 @@ class CopyValueConverter {
 
         int len = length(value);
         for (int i = 0; i < len; i++) {
+            String itemPath = path + "[" + i + "]";
             Object item = element(value, i);
             if (item == null) {
                 targetCollection.add(null);
                 continue;
             }
-            ConvertedValue converted = convert(item, sourceElementType, targetElementType, path + "[" + i + "]");
+            ConvertedValue converted = convertElement(item, sourceElementType, targetElementType, itemPath,
+                    isNumericType(targetElementType));
             if (!converted.isSupported()) {
-                if (item instanceof Number && isNumericType(targetElementType)) {
-                    throw new CopyException("Cannot copy " + path + "[" + i + "]: unsupported numeric conversion from "
-                            + item.getClass().getName() + " to " + describeType(targetElementType));
-                }
                 return UNSUPPORTED;
             }
             targetCollection.add(converted.getValue());
@@ -130,20 +142,18 @@ class CopyValueConverter {
         int len = length(value);
         Object targetArray = Array.newInstance(targetComponentClass, len);
         for (int i = 0; i < len; i++) {
+            String itemPath = path + "[" + i + "]";
             Object item = element(value, i);
             if (item == null) {
                 if (targetComponentClass.isPrimitive()) {
-                    throw new CopyException("Cannot copy " + path + "[" + i + "] to primitive array component");
+                    throw new CopyException("Cannot copy " + itemPath + " to primitive array component");
                 }
                 Array.set(targetArray, i, null);
                 continue;
             }
-            ConvertedValue converted = convert(item, sourceElementType, targetElementType, path + "[" + i + "]");
+            ConvertedValue converted = convertElement(item, sourceElementType, targetElementType, itemPath,
+                    isNumericComponent(targetComponentClass));
             if (!converted.isSupported()) {
-                if (item instanceof Number && isNumericComponent(targetComponentClass)) {
-                    throw new CopyException("Cannot copy " + path + "[" + i + "]: unsupported numeric conversion from "
-                            + item.getClass().getName() + " to " + targetComponentClass.getName());
-                }
                 return UNSUPPORTED;
             }
             Array.set(targetArray, i, converted.getValue());
@@ -151,6 +161,26 @@ class CopyValueConverter {
         return new ConvertedValue(true, targetArray);
     }
 
+    /**
+     * 数组/集合元素转换；数值目标且无法转换时抛 {@link CopyException}。
+     */
+    private static ConvertedValue convertElement(Object item, Type sourceElementType, Type targetElementType,
+                                                 String itemPath, boolean numericTarget) {
+        ConvertedValue converted = convert(item, sourceElementType, targetElementType, itemPath);
+        if (converted.isSupported()) {
+            return converted;
+        }
+        if (item instanceof Number && numericTarget) {
+            throw new CopyException("Cannot copy " + itemPath + ": unsupported numeric conversion from "
+                    + item.getClass().getName() + " to " + describeType(targetElementType));
+        }
+        return UNSUPPORTED;
+    }
+
+    /**
+     * 数值转换核心。窄化溢出抛 {@link CopyException}，path 为字段名。
+     * 被 fast path 兜底（{@link CopyPlanFactory#numericConvertAction}）和 {@link #convert} 共用。
+     */
     static Object convertNumber(Number number, Class<?> targetClass, String path) {
         if (Number.class.equals(targetClass)) {
             return number;
@@ -162,59 +192,79 @@ class CopyValueConverter {
             return integralDecimal(number, targetClass, path).toBigIntegerExact();
         }
         if (Byte.class.equals(targetClass)) {
-            if (number instanceof Byte) {
-                return number;
-            }
-            if (number instanceof Short || number instanceof Integer || number instanceof Long) {
-                return byteFromLong(number.longValue(), path);
-            }
-            BigDecimal decimal = integralDecimal(number, targetClass, path);
-            checkRange(decimal, BigDecimal.valueOf(Byte.MIN_VALUE), BigDecimal.valueOf(Byte.MAX_VALUE), targetClass, path);
-            return decimal.byteValue();
+            return toByte(number, path);
         }
         if (Short.class.equals(targetClass)) {
-            if (number instanceof Short) {
-                return number;
-            }
-            if (number instanceof Byte) {
-                return number.shortValue();
-            }
-            if (number instanceof Integer || number instanceof Long) {
-                return shortFromLong(number.longValue(), path);
-            }
-            BigDecimal decimal = integralDecimal(number, targetClass, path);
-            checkRange(decimal, BigDecimal.valueOf(Short.MIN_VALUE), BigDecimal.valueOf(Short.MAX_VALUE), targetClass, path);
-            return decimal.shortValue();
+            return toShort(number, path);
         }
         if (Integer.class.equals(targetClass)) {
-            if (number instanceof Integer) {
-                return number;
-            }
-            if (number instanceof Byte || number instanceof Short) {
-                return number.intValue();
-            }
-            if (number instanceof Long) {
-                return intFromLong(number.longValue(), path);
-            }
-            BigDecimal decimal = integralDecimal(number, targetClass, path);
-            checkRange(decimal, BigDecimal.valueOf(Integer.MIN_VALUE), BigDecimal.valueOf(Integer.MAX_VALUE), targetClass, path);
-            return decimal.intValue();
+            return toInteger(number, path);
         }
         if (Long.class.equals(targetClass)) {
-            if (number instanceof Long) {
-                return number;
-            }
-            if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
-                return number.longValue();
-            }
-            BigDecimal decimal = integralDecimal(number, targetClass, path);
-            checkRange(decimal, BigDecimal.valueOf(Long.MIN_VALUE), BigDecimal.valueOf(Long.MAX_VALUE), targetClass, path);
-            return decimal.longValue();
+            return toLong(number, path);
         }
         if (Float.class.equals(targetClass) || Double.class.equals(targetClass)) {
             return toFloatingNumber(number, targetClass, path);
         }
         return number;
+    }
+
+    private static Number toByte(Number number, String path) {
+        if (number instanceof Byte) {
+            return number;
+        }
+        if (number instanceof Short || number instanceof Integer || number instanceof Long) {
+            return byteFromLong(number.longValue(), path);
+        }
+        return convertIntegralWithRange(number, Byte.class, path,
+                BigDecimal.valueOf(Byte.MIN_VALUE), BigDecimal.valueOf(Byte.MAX_VALUE), BigDecimal::byteValue);
+    }
+
+    private static Number toShort(Number number, String path) {
+        if (number instanceof Short) {
+            return number;
+        }
+        if (number instanceof Byte) {
+            return number.shortValue();
+        }
+        if (number instanceof Integer || number instanceof Long) {
+            return shortFromLong(number.longValue(), path);
+        }
+        return convertIntegralWithRange(number, Short.class, path,
+                BigDecimal.valueOf(Short.MIN_VALUE), BigDecimal.valueOf(Short.MAX_VALUE), BigDecimal::shortValue);
+    }
+
+    private static Number toInteger(Number number, String path) {
+        if (number instanceof Integer) {
+            return number;
+        }
+        if (number instanceof Byte || number instanceof Short) {
+            return number.intValue();
+        }
+        if (number instanceof Long) {
+            return intFromLong(number.longValue(), path);
+        }
+        return convertIntegralWithRange(number, Integer.class, path,
+                BigDecimal.valueOf(Integer.MIN_VALUE), BigDecimal.valueOf(Integer.MAX_VALUE), BigDecimal::intValue);
+    }
+
+    private static Number toLong(Number number, String path) {
+        if (number instanceof Long) {
+            return number;
+        }
+        if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
+            return number.longValue();
+        }
+        return convertIntegralWithRange(number, Long.class, path,
+                BigDecimal.valueOf(Long.MIN_VALUE), BigDecimal.valueOf(Long.MAX_VALUE), BigDecimal::longValue);
+    }
+
+    private static Number convertIntegralWithRange(Number number, Class<?> targetClass, String path,
+                                                   BigDecimal min, BigDecimal max,
+                                                   java.util.function.Function<BigDecimal, Number> extractor) {
+        BigDecimal decimal = integralDecimal(number, targetClass, path);
+        checkRange(decimal, min, max, targetClass, path);
+        return extractor.apply(decimal);
     }
 
     static int intFromLong(long value, String path) {
@@ -267,6 +317,9 @@ class CopyValueConverter {
         return result;
     }
 
+    /**
+     * 基本类型 → 包装类，供 numericConvertAction 等使用。
+     */
     static Class<?> wrapClass(Class<?> clazz) {
         return wrap(clazz);
     }
@@ -354,21 +407,31 @@ class CopyValueConverter {
 
     private static Collection<Object> newCollection(Class<?> targetRaw) {
         if (targetRaw.isInterface() || Modifier.isAbstract(targetRaw.getModifiers())) {
-            if (SortedSet.class.isAssignableFrom(targetRaw) || NavigableSet.class.isAssignableFrom(targetRaw)) {
-                return new TreeSet<>();
-            }
-            if (Set.class.isAssignableFrom(targetRaw)) {
-                return new LinkedHashSet<>();
-            }
-            if (Queue.class.isAssignableFrom(targetRaw) || Deque.class.isAssignableFrom(targetRaw)) {
-                return new LinkedList<>();
-            }
-            if (Collection.class.isAssignableFrom(targetRaw) || Iterable.class.equals(targetRaw)) {
-                return new ArrayList<>();
-            }
-            return null;
+            return newDefaultCollection(targetRaw);
         }
+        return newConcreteCollection(targetRaw);
+    }
 
+    /**
+     * 接口/抽象集合类型映射到默认实现。
+     */
+    private static Collection<Object> newDefaultCollection(Class<?> targetRaw) {
+        if (SortedSet.class.isAssignableFrom(targetRaw) || NavigableSet.class.isAssignableFrom(targetRaw)) {
+            return new TreeSet<>();
+        }
+        if (Set.class.isAssignableFrom(targetRaw)) {
+            return new LinkedHashSet<>();
+        }
+        if (Queue.class.isAssignableFrom(targetRaw) || Deque.class.isAssignableFrom(targetRaw)) {
+            return new LinkedList<>();
+        }
+        if (Collection.class.isAssignableFrom(targetRaw) || Iterable.class.equals(targetRaw)) {
+            return new ArrayList<>();
+        }
+        return null;
+    }
+
+    private static Collection<Object> newConcreteCollection(Class<?> targetRaw) {
         Object instance;
         try {
             instance = ClassUtil.newInstance(targetRaw);
@@ -460,6 +523,9 @@ class CopyValueConverter {
         return type;
     }
 
+    /**
+     * 解析泛型/通配符/数组，得到运行时 Class。
+     */
     private static Class<?> rawClass(Type type) {
         Type normalizedType = normalizeType(type);
         if (normalizedType instanceof Class<?>) {
@@ -487,6 +553,9 @@ class CopyValueConverter {
         return Objects.requireNonNull(WRAPPER.get(clazz), "unsupported primitive: " + clazz);
     }
 
+    /**
+     * convert 结果包装：supported=false 表示无法转换。
+     */
     static class ConvertedValue {
         private final boolean supported;
         private final Object value;

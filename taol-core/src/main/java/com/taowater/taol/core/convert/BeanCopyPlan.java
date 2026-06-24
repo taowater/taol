@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * 按 (sourceClass, targetClass) 缓存的预编译拷贝计划。
+ * 首次访问时由 {@link CopyPlanFactory} 构建，后续直接执行 fused 动作链。
  */
 final class BeanCopyPlan {
 
@@ -21,6 +22,9 @@ final class BeanCopyPlan {
         return new BeanCopyPlan(fuse(actions));
     }
 
+    /**
+     * 缓存 key：sourceClass + targetClass。
+     */
     static BeanCopyPlan of(Class<?> sourceClass, Class<?> targetClass) {
         String key = sourceClass.getName() + '\0' + targetClass.getName();
         return CACHE.computeIfAbsent(key, k -> CopyPlanFactory.build(sourceClass, targetClass));
@@ -30,6 +34,9 @@ final class BeanCopyPlan {
         copier.copy(source, target);
     }
 
+    /**
+     * 多字段动作合并为单个 {@link FieldCopyAction}。
+     */
     private static FieldCopyAction fuse(List<FieldCopyAction> actions) {
         if (actions.isEmpty()) {
             return (source, target) -> {
@@ -42,6 +49,7 @@ final class BeanCopyPlan {
     }
 
     private static FieldCopyAction fuse(FieldCopyAction[] actions) {
+        // 字段少时展开循环，减少 invoke 层数
         if (actions.length <= 3) {
             return unroll(actions);
         }
