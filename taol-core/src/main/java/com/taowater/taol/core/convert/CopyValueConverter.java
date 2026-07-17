@@ -7,12 +7,14 @@ import lombok.NoArgsConstructor;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
- * 运行时值转换：数值窄化/拓宽、数组与集合元素递归转换。
- * <p>
- * fast path 未覆盖的组合由此兜底；{@link CopyPlanFactory#genericConvertAction} 在运行时调用 {@link #convert}。
+ * 运行时值转换：数值窄化/拓宽、日期时间、数组与集合元素递归转换
  */
 @SuppressWarnings("unchecked")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -33,7 +35,7 @@ class CopyValueConverter {
     }
 
     /**
-     * 单值转换入口。支持：数组、集合、数值、isInstance 直传；不支持则返回 UNSUPPORTED。
+     * 单值转换入口。支持：数组、集合、数值、日期时间、isInstance 直传；不支持则返回 UNSUPPORTED。
      *
      * @param path 字段名或索引路径，用于异常信息
      */
@@ -67,7 +69,130 @@ class CopyValueConverter {
             return new ConvertedValue(true, value);
         }
 
+        ConvertedValue temporal = convertTemporal(value, targetClass);
+        if (temporal.isSupported()) {
+            return temporal;
+        }
+
         return UNSUPPORTED;
+    }
+
+    /**
+     * 日期时间互转，时区统一使用 {@link ZoneId#systemDefault()}。
+     * <p>
+     * 支持：{@link Date}/{@link java.sql.Timestamp}/{@link java.sql.Date}
+     * ↔ {@link LocalDateTime}/{@link LocalDate}/{@link Instant}。
+     */
+    private static ConvertedValue convertTemporal(Object value, Class<?> targetClass) {
+        if (value instanceof Date) {
+            Object converted = fromDate((Date) value, targetClass);
+            if (converted != null) {
+                return new ConvertedValue(true, converted);
+            }
+        }
+        if (value instanceof LocalDateTime) {
+            Object converted = fromLocalDateTime((LocalDateTime) value, targetClass);
+            if (converted != null) {
+                return new ConvertedValue(true, converted);
+            }
+        }
+        if (value instanceof LocalDate) {
+            Object converted = fromLocalDate((LocalDate) value, targetClass);
+            if (converted != null) {
+                return new ConvertedValue(true, converted);
+            }
+        }
+        if (value instanceof Instant) {
+            Object converted = fromInstant((Instant) value, targetClass);
+            if (converted != null) {
+                return new ConvertedValue(true, converted);
+            }
+        }
+        return UNSUPPORTED;
+    }
+
+    private static Object fromDate(Date date, Class<?> targetClass) {
+        if (LocalDateTime.class.equals(targetClass)) {
+            if (date instanceof java.sql.Timestamp) {
+                return ((java.sql.Timestamp) date).toLocalDateTime();
+            }
+            if (date instanceof java.sql.Date) {
+                return ((java.sql.Date) date).toLocalDate().atStartOfDay();
+            }
+            return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+        }
+        if (LocalDate.class.equals(targetClass)) {
+            if (date instanceof java.sql.Date) {
+                return ((java.sql.Date) date).toLocalDate();
+            }
+            if (date instanceof java.sql.Timestamp) {
+                return ((java.sql.Timestamp) date).toLocalDateTime().toLocalDate();
+            }
+            return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        if (Instant.class.equals(targetClass)) {
+            if (date instanceof java.sql.Date) {
+                return ((java.sql.Date) date).toLocalDate()
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant();
+            }
+            return date.toInstant();
+        }
+        return null;
+    }
+
+    private static Object fromLocalDateTime(LocalDateTime dateTime, Class<?> targetClass) {
+        if (Date.class.equals(targetClass)) {
+            return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+        }
+        if (java.sql.Timestamp.class.equals(targetClass)) {
+            return java.sql.Timestamp.valueOf(dateTime);
+        }
+        if (java.sql.Date.class.equals(targetClass)) {
+            return java.sql.Date.valueOf(dateTime.toLocalDate());
+        }
+        if (LocalDate.class.equals(targetClass)) {
+            return dateTime.toLocalDate();
+        }
+        if (Instant.class.equals(targetClass)) {
+            return dateTime.atZone(ZoneId.systemDefault()).toInstant();
+        }
+        return null;
+    }
+
+    private static Object fromLocalDate(LocalDate date, Class<?> targetClass) {
+        if (Date.class.equals(targetClass)) {
+            return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        }
+        if (java.sql.Date.class.equals(targetClass)) {
+            return java.sql.Date.valueOf(date);
+        }
+        if (java.sql.Timestamp.class.equals(targetClass)) {
+            return java.sql.Timestamp.valueOf(date.atStartOfDay());
+        }
+        if (LocalDateTime.class.equals(targetClass)) {
+            return date.atStartOfDay();
+        }
+        if (Instant.class.equals(targetClass)) {
+            return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        }
+        return null;
+    }
+
+    private static Object fromInstant(Instant instant, Class<?> targetClass) {
+        if (Date.class.equals(targetClass)) {
+            return Date.from(instant);
+        }
+        if (java.sql.Timestamp.class.equals(targetClass)) {
+            return java.sql.Timestamp.from(instant);
+        }
+        if (LocalDateTime.class.equals(targetClass)) {
+            return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        }
+        if (LocalDate.class.equals(targetClass)) {
+            return instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        return null;
     }
 
     /**
@@ -178,8 +303,7 @@ class CopyValueConverter {
     }
 
     /**
-     * 数值转换核心。窄化溢出抛 {@link CopyException}，path 为字段名。
-     * 被 fast path 兜底（{@link CopyPlanFactory#numericConvertAction}）和 {@link #convert} 共用。
+     * 数值转换核心。窄化溢出抛 {@link CopyException}，path 为字段名
      */
     static Object convertNumber(Number number, Class<?> targetClass, String path) {
         if (Number.class.equals(targetClass)) {

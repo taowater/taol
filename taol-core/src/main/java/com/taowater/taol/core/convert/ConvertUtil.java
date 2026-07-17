@@ -10,7 +10,8 @@ import java.util.Objects;
  * Bean 拷贝入口。
  * <p>
  * 调用链：{@link #copy} → {@link BeanCopyPlan}（按类型对缓存）→ 预编译 {@link FieldCopyAction}。
- * 同名属性按 getter/setter 匹配；数值与 char/boolean 走 fast path，其余走 {@link CopyValueConverter}。
+ * 同名属性按 getter/setter 匹配；数值与 char/boolean 走 fast path，其余走 {@link CopyValueConverter}
+ * （含日期时间如 Date ↔ LocalDateTime）。
  */
 @UtilityClass
 public class ConvertUtil {
