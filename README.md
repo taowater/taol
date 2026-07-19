@@ -142,25 +142,6 @@ Field field = ReflectUtil.getField(User.class, "name");
 Class<String> returnType = LambdaUtil.getReturnClass((Function1<Object, String>) Object::toString);
 ```
 
-#### 组合注解
-
-类似 Spring 的元注解 / `@AliasFor` 能力，可解析直接注解或元注解上的属性，并处理别名合并：
-
-```java
-@Retention(RetentionPolicy.RUNTIME)
-@Ann(attr1 = "fromMeta")
-@interface ApiAnn {
-    @AliasFor(annotation = Ann.class, value = "attr2")
-    String value() default "";
-}
-
-@ApiAnn("create")
-class CreateController {
-}
-
-Ann ann = AnnotationUtil.getAnnotation(CreateController.class, Ann.class);
-```
-
 #### 元组
 
 ```java
