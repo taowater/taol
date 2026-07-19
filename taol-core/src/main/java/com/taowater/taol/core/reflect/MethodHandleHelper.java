@@ -20,14 +20,21 @@ public class MethodHandleHelper {
     private static final int FULL_POWER = 31;
     private static final Constructor<MethodHandles.Lookup> LOOKUP_CONSTRUCTOR;
     private static final MethodHandles.Lookup IMPL_LOOKUP;
+    /**
+     * JDK9+ 的 {@code MethodHandles.privateLookupIn(Class, Lookup)}；用反射持有以保持 Java 8 源码/运行兼容。
+     * 对 classpath（unnamed module）上的类无需 {@code --add-opens} 即可获得私有访问。
+     */
+    private static final Method PRIVATE_LOOKUP_IN;
 
     static {
         Constructor<MethodHandles.Lookup> constructor = null;
         try {
             constructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
             constructor.setAccessible(true);
-        } catch (ReflectiveOperationException ignored) {
-            // ignored
+        } catch (Throwable ignored) {
+            // JDK16+ 强封装下 setAccessible 会抛 InaccessibleObjectException（RuntimeException），
+            // 静态初始化必须兜住任何异常，置空后由 privilegedLookup 降级到公有 Lookup，切勿让类初始化失败。
+            constructor = null;
         }
         LOOKUP_CONSTRUCTOR = constructor;
 
@@ -36,10 +43,20 @@ public class MethodHandleHelper {
             Field field = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
             field.setAccessible(true);
             implLookup = (MethodHandles.Lookup) field.get(null);
-        } catch (ReflectiveOperationException ignored) {
-            // ignored
+        } catch (Throwable ignored) {
+            // 同上：未开放 java.base/java.lang.invoke 时优雅降级，而非抛 ExceptionInInitializerError。
+            implLookup = null;
         }
         IMPL_LOOKUP = implLookup;
+
+        Method privateLookupIn = null;
+        try {
+            privateLookupIn = MethodHandles.class.getMethod("privateLookupIn", Class.class, MethodHandles.Lookup.class);
+        } catch (Throwable ignored) {
+            // Java 8 无此方法；保持为 null。
+            privateLookupIn = null;
+        }
+        PRIVATE_LOOKUP_IN = privateLookupIn;
     }
 
     @Getter
@@ -105,6 +122,14 @@ public class MethodHandleHelper {
                 return IMPL_LOOKUP.in(clazz);
             } catch (Exception ignored) {
                 // fall through
+            }
+        }
+        // JDK9+：对 classpath（unnamed module）类无需 --add-opens 即可获得含私有权限的 Lookup。
+        if (PRIVATE_LOOKUP_IN != null) {
+            try {
+                return (MethodHandles.Lookup) PRIVATE_LOOKUP_IN.invoke(null, clazz, MethodHandles.lookup());
+            } catch (Throwable ignored) {
+                // 目标类所在模块未对本模块开放等情况，继续降级。
             }
         }
         if (Modifier.isPublic(clazz.getModifiers())) {
