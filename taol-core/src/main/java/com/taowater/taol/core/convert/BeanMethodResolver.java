@@ -43,9 +43,7 @@ public class BeanMethodResolver {
             }
             if (fieldType == Boolean.class) {
                 method = findMethod(clazz, ClassUtil.getGetMethodName(fieldName), Boolean.class);
-                if (method != null) {
-                    return method;
-                }
+                return method;
             }
         }
         return null;
@@ -88,7 +86,9 @@ public class BeanMethodResolver {
         return null;
     }
 
-    /** 沿继承链查找，跳过 static 方法。 */
+    /**
+     * 沿继承链查找，跳过 static 方法。
+     */
     private static Method findMethod(Class<?> clazz, String name, Class<?> returnType, Class<?>... parameterTypes) {
         for (Class<?> searchType = clazz; searchType != null; searchType = searchType.getSuperclass()) {
             try {

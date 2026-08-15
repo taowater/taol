@@ -7,7 +7,7 @@ import lombok.experimental.UtilityClass;
 import java.util.Objects;
 
 /**
- * Bean 拷贝入口。
+ * Bean拷贝工具
  * <p>
  * 调用链：{@link #copy} → {@link BeanCopyPlan}（按类型对缓存）→ 预编译 {@link FieldCopyAction}。
  * 同名属性按 getter/setter 匹配；数值与 char/boolean 走 fast path，其余走 {@link CopyValueConverter}

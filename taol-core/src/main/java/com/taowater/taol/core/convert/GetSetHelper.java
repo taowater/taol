@@ -15,7 +15,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * getter/setter 的 Lambda 构建入口。
+ * getter/setter 的 Lambda 构建入口
  * <p>
  * 基本类型 → {@link PrimitiveAccessorHelper}（无装箱 To*Function / Obj*Consumer）；
  * 引用类型 → {@link LambdaMetafactory} 生成 Function / BiConsumer。
