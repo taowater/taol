@@ -2,7 +2,6 @@ package com.taowater.taol.core.reflect;
 
 import com.taowater.taol.core.reflect.type.ParameterizedTypeImpl;
 import com.taowater.taol.core.util.CollUtil;
-import com.taowater.taol.core.util.EmptyUtil;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.GenericArrayType;
@@ -61,7 +60,7 @@ public class TypeUtil {
      * @return {@link Type[] }
      */
     public static Type[] getTypeArguments(Type type, Class<?> genericType) {
-        if (EmptyUtil.isHadEmpty(type, genericType)) {
+        if (Objects.isNull(type) || Objects.isNull(genericType)) {
             return null;
         }
         return TYPE_CACHE.computeIfAbsent(type.getTypeName() + "_" + genericType.getName(), k -> {
@@ -94,16 +93,12 @@ public class TypeUtil {
         Map<Class<?>, ParameterizedType> map;
         if (null != superClass && !Object.class.equals(superClass)) {
             map = getGenerics(superClass);
-            if (EmptyUtil.isNotEmpty(map)) {
-                result.putAll(map);
-            }
+            result.putAll(map);
         }
         // 实现的接口
         for (Type inter : clazz.getGenericInterfaces()) {
             map = getGenerics(inter);
-            if (EmptyUtil.isNotEmpty(map)) {
-                result.putAll(map);
-            }
+            result.putAll(map);
         }
         return result;
     }
@@ -119,18 +114,14 @@ public class TypeUtil {
         Map<Class<?>, ParameterizedType> map;
         if (type instanceof Class<?>) {
             map = mapGenerics((Class<?>) type);
-            if (EmptyUtil.isNotEmpty(map)) {
-                result.putAll(map);
-            }
+            result.putAll(map);
         }
         if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedInter = (ParameterizedType) type;
             Class<?> rawType = (Class<?>) (parameterizedInter).getRawType();
             result.put(rawType, parameterizedInter);
             map = mapGenerics(rawType);
-            if (EmptyUtil.isNotEmpty(map)) {
-                map.forEach((k, v) -> result.put(k, getRealParameterizedType(parameterizedInter, v)));
-            }
+            map.forEach((k, v) -> result.put(k, getRealParameterizedType(parameterizedInter, v)));
         }
         return result;
     }
@@ -144,9 +135,6 @@ public class TypeUtil {
      */
     private static ParameterizedType getRealParameterizedType(ParameterizedType type, ParameterizedType parentType) {
         Type[] arguments = parentType.getActualTypeArguments();
-        if (EmptyUtil.isEmpty(arguments)) {
-            return parentType;
-        }
         if (Stream.of(arguments).anyMatch(e -> e instanceof TypeVariable)) {
             List<Type> realTypes = getRealTypes(parentType, ((Class<?>) type.getRawType()).getTypeParameters(), type.getActualTypeArguments());
             return new ParameterizedTypeImpl((Class<?>) parentType.getRawType(), realTypes.toArray(new Type[0]), parentType.getOwnerType());

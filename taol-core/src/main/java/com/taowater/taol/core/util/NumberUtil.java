@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -40,7 +41,7 @@ public class NumberUtil {
      */
     @SuppressWarnings("unchecked")
     public static <N extends Number> N getValue(BigDecimal bigDecimal, Function1<?, ? extends N> function) {
-        if (EmptyUtil.isHadEmpty(bigDecimal, function)) {
+        if (Objects.isNull(bigDecimal) || Objects.isNull(function)) {
             return null;
         }
         Class<? extends N> returnClass = LambdaUtil.getReturnClass(function);

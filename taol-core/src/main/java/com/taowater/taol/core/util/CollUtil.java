@@ -4,7 +4,6 @@ import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 集合相关工具
@@ -13,7 +12,7 @@ import java.util.stream.Collectors;
 public class CollUtil {
 
     public static <T> T get(final Collection<T> collection, int index) {
-        if (EmptyUtil.isEmpty(collection)) {
+        if (Objects.isNull(collection)) {
             return null;
         }
         // 检查越界
@@ -28,7 +27,7 @@ public class CollUtil {
     }
 
     public static <E> E get(E[] array, int index) {
-        if (EmptyUtil.isEmpty(array)) {
+        if (Objects.isNull(array)) {
             return null;
         }
         if (index < 0 || index >= array.length) {
@@ -37,16 +36,17 @@ public class CollUtil {
         return array[index];
     }
 
-    public static <E> E get(Iterator<E> iterator, int index) {
-        if (EmptyUtil.isEmpty(iterator)) {
+    public static <E> E get(Iterator<E> iterator, final int index) {
+        if (Objects.isNull(iterator)) {
             return null;
         }
         if (index < 0) {
             return null;
         }
+        int tempIndex = index;
         while (iterator.hasNext()) {
-            index--;
-            if (-1 == index) {
+            tempIndex--;
+            if (-1 == tempIndex) {
                 return iterator.next();
             }
             iterator.next();
@@ -54,12 +54,35 @@ public class CollUtil {
         return null;
     }
 
+
+    @SafeVarargs
+    public static <E> List<E> list(List<E> defaultList, E... elements) {
+        if (Objects.isNull(elements)) {
+            return defaultList;
+        }
+        List<E> list = new ArrayList<>(elements.length);
+        list.addAll(Arrays.asList(elements));
+        return list;
+    }
+
     @SafeVarargs
     public static <E> List<E> list(E... elements) {
-        if (EmptyUtil.isEmpty(elements)) {
-            return new ArrayList<>();
+        return list(Collections.emptyList(), elements);
+    }
+
+    @SafeVarargs
+    public static <E> Set<E> set(Set<E> defaultSet, E... elements) {
+        if (Objects.isNull(elements)) {
+            return defaultSet;
         }
-        return Arrays.stream(elements).collect(Collectors.toList());
+        Set<E> set = new HashSet<>(elements.length);
+        set.addAll(Arrays.asList(elements));
+        return set;
+    }
+
+    @SafeVarargs
+    public static <E> Set<E> set(E... elements) {
+        return set(Collections.emptySet(), elements);
     }
 
     @SuppressWarnings("unchecked")

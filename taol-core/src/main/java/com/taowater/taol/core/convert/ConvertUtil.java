@@ -17,7 +17,7 @@ import java.util.Objects;
 public class ConvertUtil {
 
     /**
-     * 新建目标实例并拷贝同名属性。
+     * 新建目标实例并拷贝同名属性
      */
     public static <S, T> T convert(S source, Class<T> tClazz) {
         T target = ClassUtil.newInstance(tClazz);
@@ -26,8 +26,8 @@ public class ConvertUtil {
     }
 
     /**
-     * 将 source 同名属性写入已有 target。
-     * null 入参直接返回，不抛异常。
+     * 将 source 同名属性写入已有 target
+     * null 入参直接返回，不抛异常
      */
     public static <S, T> void copy(S source, T target) {
         if (Objects.isNull(source) || Objects.isNull(target)) {

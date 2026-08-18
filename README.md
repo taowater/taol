@@ -20,6 +20,7 @@
 ### 🍊Maven
 
 ```xml
+
 <dependency>
     <groupId>io.github.taowater</groupId>
     <artifactId>taol-core</artifactId>
@@ -37,7 +38,8 @@
 * 编译期方案（如 MapStruct）性能好，但要额外写 Mapper，改字段成本更高
 * 判空、切割、异步这类小工具又散落在各处，每次都要自己拼一点样板代码
 
-`taol` 就是在这些场景里攒出来的小工具箱。核心是带计划缓存的 Bean 拷贝：同名属性按 getter/setter 匹配，数值拓宽/窄化、集合元素转换、日期时间转换会尽量自动处理；其余则是一些在业务里高频出现的工具方法。
+`taol` 就是在这些场景里攒出来的小工具箱。核心是带计划缓存的 Bean 拷贝：同名属性按 getter/setter
+匹配，数值拓宽/窄化、集合元素转换、日期时间转换会尽量自动处理；其余则是一些在业务里高频出现的工具方法。
 
 它没有什么很高深的东西，更多是封装与取舍。若能帮你少写几行样板、少踩几次拷贝坑，便已足够。
 
@@ -55,7 +57,9 @@ UserVO vo = ConvertUtil.convert(user, UserVO.class);
 
 // 写入已有目标（source / target 为 null 时直接返回，不抛异常）
 UserVO vo = new UserVO();
-ConvertUtil.copy(user, vo);
+ConvertUtil.
+
+copy(user, vo);
 ```
 
 同名属性会按 getter/setter 匹配。常见能力包括：
@@ -75,13 +79,15 @@ OrderVO vo = ConvertUtil.convert(order, OrderVO.class);
 
 ```java
 // 支持 null、字符串、数组、Map、Iterable、Iterator，以及实现 Emptyable 的自定义类型
-if (EmptyUtil.isEmpty(list)) {
-    return;
-}
+if(EmptyUtil.isEmpty(list)){
+        return;
+        }
 
-if (EmptyUtil.isBlank(name)) {
-    return;
-}
+        if(EmptyUtil.
+
+isBlank(name)){
+        return;
+        }
 
 // 是否存在空 / 是否全非空
 boolean hadEmpty = EmptyUtil.isHadEmpty(name, ids, options);
@@ -97,19 +103,6 @@ Integer second = CollUtil.get(numbers, 1);
 
 List<String> list = CollUtil.list("Ada", "Lin");
 String[] defaults = CollUtil.arr("unknown", 3);
-```
-
-#### 字符串切割
-
-```java
-// 默认按逗号切割：去空白、去空串、去重
-List<String> tags = SplitUtil.split("java, spring, java");
-// ["java", "spring"]
-
-List<Long> ids = SplitUtil.splitLong("1,2,3");
-
-// 自定义分隔符、转换逻辑、是否去重
-List<Integer> ports = SplitUtil.split("8080|8081", "\\|", Integer::valueOf, false);
 ```
 
 #### 异步
@@ -150,13 +143,14 @@ String message = result.getLeft();
 Integer status = result.getRight();
 ```
 
-其他更多方法可从对应工具类点出来看看：`ConvertUtil`、`EmptyUtil`、`CollUtil`、`SplitUtil`、`AsyncScope`、`ReflectUtil`、`LambdaUtil`……
+其他更多方法可从对应工具类点出来看看：`ConvertUtil`、`EmptyUtil`、`CollUtil`、`SplitUtil`、`AsyncScope`、`ReflectUtil`、
+`LambdaUtil`……
 
 ### 模块说明
 
-| 模块 | 说明 |
-| --- | --- |
-| `taol-core` | 正式发布的工具库 |
+| 模块           | 说明                                     |
+|----------------|------------------------------------------|
+| `taol-core`    | 正式发布的工具库                         |
 | `convert-test` | 拷贝正确性与性能粗测（开发参考，不发布） |
 
 ### License

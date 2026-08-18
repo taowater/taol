@@ -44,8 +44,6 @@ public class MethodHandleHelper {
             field.setAccessible(true);
             implLookup = (MethodHandles.Lookup) field.get(null);
         } catch (Throwable ignored) {
-            // 同上：未开放 java.base/java.lang.invoke 时优雅降级，而非抛 ExceptionInInitializerError。
-            implLookup = null;
         }
         IMPL_LOOKUP = implLookup;
 
@@ -53,8 +51,6 @@ public class MethodHandleHelper {
         try {
             privateLookupIn = MethodHandles.class.getMethod("privateLookupIn", Class.class, MethodHandles.Lookup.class);
         } catch (Throwable ignored) {
-            // Java 8 无此方法；保持为 null。
-            privateLookupIn = null;
         }
         PRIVATE_LOOKUP_IN = privateLookupIn;
     }
