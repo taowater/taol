@@ -10,7 +10,6 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * 类型相关工具
@@ -135,9 +134,11 @@ public class TypeUtil {
      */
     private static ParameterizedType getRealParameterizedType(ParameterizedType type, ParameterizedType parentType) {
         Type[] arguments = parentType.getActualTypeArguments();
-        if (Stream.of(arguments).anyMatch(e -> e instanceof TypeVariable)) {
-            List<Type> realTypes = getRealTypes(parentType, ((Class<?>) type.getRawType()).getTypeParameters(), type.getActualTypeArguments());
-            return new ParameterizedTypeImpl((Class<?>) parentType.getRawType(), realTypes.toArray(new Type[0]), parentType.getOwnerType());
+        for (Type argument : arguments) {
+            if (argument instanceof TypeVariable) {
+                List<Type> realTypes = getRealTypes(parentType, ((Class<?>) type.getRawType()).getTypeParameters(), type.getActualTypeArguments());
+                return new ParameterizedTypeImpl((Class<?>) parentType.getRawType(), realTypes.toArray(new Type[0]), parentType.getOwnerType());
+            }
         }
         return parentType;
     }

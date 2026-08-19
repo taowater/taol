@@ -8,7 +8,6 @@ import java.lang.reflect.Array;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * 判空工具类
@@ -57,56 +56,119 @@ public class EmptyUtil {
      * 判断对象是否至少一个为空 主要包括字符串，集合，数组，及其他类型
      */
     public static boolean isHadEmpty(Object... objs) {
-        return Stream.of(objs).anyMatch(EmptyUtil::isEmpty);
+        if (Objects.isNull(objs)) {
+            return true;
+        }
+        for (Object o : objs) {
+            if (EmptyUtil.isEmpty(o)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * 判断若干个对象中是否存在null
      */
     public static boolean isHadNull(Object... objs) {
-        return Stream.of(objs).anyMatch(Objects::isNull);
+        if (Objects.isNull(objs)) {
+            return true;
+        }
+        for (Object o : objs) {
+            if (Objects.isNull(o)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * 判断若干个对象中是否存在非空
      */
     public static boolean isHadNotEmpty(Object... objs) {
-        return Stream.of(objs).anyMatch(EmptyUtil::isNotEmpty);
+        if (Objects.isNull(objs)) {
+            return false;
+        }
+        for (Object o : objs) {
+            if (EmptyUtil.isNotEmpty(o)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * 判断若干个对象中是否存在非null
      */
     public static boolean isHadNotNull(Object... objs) {
-        return Stream.of(objs).anyMatch(Objects::nonNull);
+        if (Objects.isNull(objs)) {
+            return false;
+        }
+        for (Object o : objs) {
+            if (Objects.nonNull(o)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * 判断若干个对象是否全空
      */
     public static boolean isAllEmpty(Object... objs) {
-        return !isHadNotEmpty(objs);
+        if (Objects.isNull(objs)) {
+            return true;
+        }
+        for (Object o : objs) {
+            if (EmptyUtil.isNotEmpty(o)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * 判断若干个对象中是否全为非空
      */
     public static boolean isAllNotEmpty(Object... objs) {
-        return !isHadEmpty(objs);
+        if (Objects.isNull(objs)) {
+            return false;
+        }
+        for (Object o : objs) {
+            if (EmptyUtil.isEmpty(o)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * 判断若干个对象中是否既有空的，也有非空的
      */
     public static boolean isHadBoth(Object... objs) {
-        return isHadEmpty(objs) && isHadNotEmpty(objs);
+        if (Objects.isNull(objs)) {
+            return false;
+        }
+        boolean hadNull = false;
+        boolean hadNotNull = false;
+        for (Object o : objs) {
+            if (EmptyUtil.isEmpty(o)) {
+                hadNull = true;
+            } else {
+                hadNotNull = true;
+            }
+            if (hadNull && hadNotNull) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * 是否为空白串
      */
     public static boolean isBlank(CharSequence str) {
-        return isEmpty(str) || str.toString().trim().isEmpty();
+        return Objects.isNull(str) || str.length() == 0 || str.toString().trim().isEmpty();
     }
 
     /**

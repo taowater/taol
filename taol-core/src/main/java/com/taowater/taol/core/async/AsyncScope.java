@@ -1,11 +1,10 @@
 package com.taowater.taol.core.async;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * 异步作用域
@@ -30,8 +29,16 @@ public interface AsyncScope {
     }
 
     default List<Object> all(Supplier<Object>... suppliers) {
-        List<AsyncFuture<Object>> collect = Arrays.stream(suppliers).map(this::supply).collect(Collectors.toList());
-        return collect.stream().map(AsyncFuture::join).collect(Collectors.toList());
+        List<AsyncFuture<Object>> futures = new ArrayList<>(suppliers.length);
+        // 先提交全部任务，再按输入顺序等待结果，保持原有并发语义
+        for (Supplier<Object> supplier : suppliers) {
+            futures.add(supply(supplier));
+        }
+        List<Object> results = new ArrayList<>(futures.size());
+        for (AsyncFuture<Object> future : futures) {
+            results.add(future.join());
+        }
+        return results;
     }
 
     static DefaultAsyncScope.DefaultAsyncScopeBuilder build() {

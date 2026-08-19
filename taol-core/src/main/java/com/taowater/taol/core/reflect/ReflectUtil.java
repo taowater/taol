@@ -49,10 +49,13 @@ public class ReflectUtil {
         if (Objects.isNull(fields)) {
             return null;
         }
-        return fields.stream().filter(Objects::nonNull).filter(e -> e.getName().equals(name)).findFirst().orElseThrow(() -> {
-            String msg = MessageFormat.format("The field \"{0}\" does not exist in Class {1}", name, beanClass.getName());
-            return new RuntimeException(msg);
-        });
+        for (Field field : fields) {
+            if (Objects.nonNull(field) && field.getName().equals(name)) {
+                return field;
+            }
+        }
+        String msg = MessageFormat.format("The field \"{0}\" does not exist in Class {1}", name, beanClass.getName());
+        throw new RuntimeException(msg);
     }
 
     public static Class<?> getFieldType(Class<?> beanClass, String name) {

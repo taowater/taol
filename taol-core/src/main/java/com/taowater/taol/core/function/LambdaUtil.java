@@ -10,8 +10,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * λ表达式工具类
@@ -123,9 +121,13 @@ public class LambdaUtil {
             return new ArrayList<>(0);
         }
         expr = matcher.group(1);
-        return Stream.of(expr.split(";"))
-                .map(s -> Optional.of(s).map(e -> e.replace("L", "")).map(e -> e.replace("/", ".")).orElse(null))
-                .map(ClassUtil::fromName).collect(Collectors.toList());
+        String[] parameterNames = expr.split(";");
+        List<Class<?>> parameterTypes = new ArrayList<>(parameterNames.length);
+        for (String parameterName : parameterNames) {
+            String className = parameterName.replace("L", "").replace("/", ".");
+            parameterTypes.add(ClassUtil.fromName(className));
+        }
+        return parameterTypes;
     }
 
     public static <T, R> List<Class<?>> getParameterTypes(Consumer2<T, R> fun) {

@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,6 +37,14 @@ class LambdaUtilTest {
 //        SerFunction<String, String> fun2 = s -> s + "123";
         assertEquals(LambdaUtil.getParameterType(fun, 0), String.class);
         assertEquals(LambdaUtil.getParameterType((Function1<BigDecimal, Long>) LambdaUtilTest::fun2, 0), BigDecimal.class);
+    }
+
+    /**
+     * 验证空序列化 Lambda 返回空参数列表
+     */
+    @Test
+    void getParameterTypesWithNullLambda() {
+        assertEquals(Collections.emptyList(), LambdaUtil.getParameterTypes((java.lang.invoke.SerializedLambda) null));
     }
 
     @Getter

@@ -5,6 +5,8 @@ import com.taowater.taol.core.async.AsyncScope;
 import lombok.var;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +42,23 @@ class AsyncTest {
         assertEquals(234, join1);
         assertEquals(666, join2);
         assertEquals(null, join3);
+    }
+
+    /**
+     * 验证批量异步任务全部提交后按输入顺序返回结果
+     */
+    @Test
+    void testAll() {
+        AsyncScope scope = AsyncScope.build()
+                .executor(ForkJoinPool.commonPool())
+                .returnNullIfEx(true)
+                .timeout(5)
+                .build();
+
+        List<Object> results = scope.all(() -> 1, () -> "two", () -> null);
+
+        assertEquals(Arrays.asList(1, "two", null), results);
+        assertEquals(0, scope.all().size());
     }
 
     public static void sleep(long time) {

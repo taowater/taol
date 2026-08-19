@@ -8,6 +8,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 判断赋值工具
@@ -18,7 +19,7 @@ import java.util.Objects;
 public class AssignableUtil {
 
     private static final Map<Class<?>, Class<?>> WRAPPER = new HashMap<>();
-    private static final Map<String, Boolean> RESULT = new HashMap<>();
+    private static final Map<String, Boolean> RESULT = new ConcurrentHashMap<>();
 
     static {
         WRAPPER.put(int.class, Integer.class);
@@ -36,11 +37,12 @@ public class AssignableUtil {
      * 获取包装类对应的基本类型（如果没有则返回 null）
      */
     private static Class<?> getPrimitive(Class<?> wrapperType) {
-        return WRAPPER.entrySet().stream()
-                .filter(e -> e.getValue().equals(wrapperType))
-                .findFirst()
-                .map(Map.Entry::getKey)
-                .orElse(null);
+        for (Map.Entry<Class<?>, Class<?>> entry : WRAPPER.entrySet()) {
+            if (entry.getValue().equals(wrapperType)) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
 
@@ -51,26 +53,29 @@ public class AssignableUtil {
         if (Objects.isNull(source) || Objects.isNull(target)) {
             return false;
         }
-        return RESULT.computeIfAbsent(source.getTypeName() + "@" + target.getTypeName(), k -> {
-            if (source.equals(target)) {
-                return true;
-            }
+        String key = source.getTypeName() + "@" + target.getTypeName();
+        Boolean cached = RESULT.get(key);
+        if (Objects.nonNull(cached)) {
+            return cached;
+        }
 
-            if (source instanceof Class<?> && target instanceof Class<?>) {
-                return isClassAssignable((Class<?>) source, (Class<?>) target);
-            }
-
+        boolean result;
+        if (source.equals(target)) {
+            result = true;
+        } else if (source instanceof Class<?> && target instanceof Class<?>) {
+            result = isClassAssignable((Class<?>) source, (Class<?>) target);
+        } else if (source instanceof ParameterizedType || target instanceof ParameterizedType) {
             // 泛型类型
-            if (source instanceof ParameterizedType || target instanceof ParameterizedType) {
-                return isGenericAssignable(source, target);
-            }
-
+            result = isGenericAssignable(source, target);
+        } else if (source instanceof GenericArrayType || target instanceof GenericArrayType) {
             // 数组类型
-            if (source instanceof GenericArrayType || target instanceof GenericArrayType) {
-                return isArrayAssignable(source, target);
-            }
-            return false;
-        });
+            result = isArrayAssignable(source, target);
+        } else {
+            result = false;
+        }
+        // 递归计算完成后再写入，避免修改正在执行的缓存计算
+        RESULT.put(key, result);
+        return result;
     }
 
 
