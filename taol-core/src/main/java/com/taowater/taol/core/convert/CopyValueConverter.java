@@ -234,20 +234,29 @@ class CopyValueConverter {
             return UNSUPPORTED;
         }
 
-        int len = length(value);
-        for (int i = 0; i < len; i++) {
-            String itemPath = path + "[" + i + "]";
-            Object item = element(value, i);
-            if (item == null) {
-                targetCollection.add(null);
-                continue;
+        boolean numericTarget = isNumericType(targetElementType);
+        if (value instanceof Collection && !(value instanceof RandomAccess)) {
+            // 非随机访问集合只遍历一次，避免按索引反复扫描导致 O(n²)
+            int index = 0;
+            for (Object item : (Collection<?>) value) {
+                ConvertedValue converted = convertCollectionElement(item, sourceElementType, targetElementType,
+                        path + "[" + index + "]", numericTarget);
+                if (!converted.isSupported()) {
+                    return UNSUPPORTED;
+                }
+                targetCollection.add(converted.getValue());
+                index++;
             }
-            ConvertedValue converted = convertElement(item, sourceElementType, targetElementType, itemPath,
-                    isNumericType(targetElementType));
-            if (!converted.isSupported()) {
-                return UNSUPPORTED;
+        } else {
+            int len = length(value);
+            for (int i = 0; i < len; i++) {
+                ConvertedValue converted = convertCollectionElement(element(value, i), sourceElementType,
+                        targetElementType, path + "[" + i + "]", numericTarget);
+                if (!converted.isSupported()) {
+                    return UNSUPPORTED;
+                }
+                targetCollection.add(converted.getValue());
             }
-            targetCollection.add(converted.getValue());
         }
         return new ConvertedValue(true, targetCollection);
     }
@@ -266,24 +275,75 @@ class CopyValueConverter {
 
         int len = length(value);
         Object targetArray = Array.newInstance(targetComponentClass, len);
-        for (int i = 0; i < len; i++) {
-            String itemPath = path + "[" + i + "]";
-            Object item = element(value, i);
-            if (item == null) {
-                if (targetComponentClass.isPrimitive()) {
-                    throw new CopyException("Cannot copy " + itemPath + " to primitive array component");
+        if (value instanceof Collection && !(value instanceof RandomAccess)) {
+            // 非随机访问集合只遍历一次，保持数组转换与集合转换一致
+            int index = 0;
+            for (Object item : (Collection<?>) value) {
+                ConvertedValue converted = convertArrayElement(item, sourceElementType, targetElementType,
+                        targetComponentClass, path + "[" + index + "]");
+                if (!converted.isSupported()) {
+                    return UNSUPPORTED;
                 }
-                Array.set(targetArray, i, null);
-                continue;
+                Array.set(targetArray, index++, converted.getValue());
             }
-            ConvertedValue converted = convertElement(item, sourceElementType, targetElementType, itemPath,
-                    isNumericComponent(targetComponentClass));
+            return new ConvertedValue(true, targetArray);
+        }
+        for (int i = 0; i < len; i++) {
+            ConvertedValue converted = convertArrayElement(element(value, i), sourceElementType, targetElementType,
+                    targetComponentClass, path + "[" + i + "]");
             if (!converted.isSupported()) {
                 return UNSUPPORTED;
             }
             Array.set(targetArray, i, converted.getValue());
         }
         return new ConvertedValue(true, targetArray);
+    }
+
+    /**
+     * 转换集合元素，统一处理 null 和数值目标的失败语义
+     */
+    private static ConvertedValue convertCollectionElement(Object item, Type sourceElementType,
+                                                           Type targetElementType, String itemPath,
+                                                           boolean numericTarget) {
+        if (item == null) {
+            return new ConvertedValue(true, null);
+        }
+        return convertElement(item, sourceElementType, targetElementType, itemPath, numericTarget);
+    }
+
+    /**
+     * 转换数组元素并校验基本类型数组不能写入 null
+     */
+    private static ConvertedValue convertArrayElement(Object item, Type sourceElementType, Type targetElementType,
+                                                      Class<?> targetComponentClass, String itemPath) {
+        if (item == null) {
+            if (targetComponentClass.isPrimitive()) {
+                throw new CopyException("Cannot copy " + itemPath + " to primitive array component");
+            }
+            return new ConvertedValue(true, null);
+        }
+        ConvertedValue converted = convertElement(item, sourceElementType, targetElementType, itemPath,
+                isNumericComponent(targetComponentClass));
+        if (!converted.isSupported()) {
+            return UNSUPPORTED;
+        }
+        return converted;
+    }
+
+    private static Object element(Object value, int index) {
+        if (value.getClass().isArray()) {
+            return Array.get(value, index);
+        }
+        if (value instanceof List) {
+            return ((List<?>) value).get(index);
+        }
+        int i = 0;
+        for (Object item : (Collection<?>) value) {
+            if (i++ == index) {
+                return item;
+            }
+        }
+        return null;
     }
 
     /**
@@ -587,22 +647,6 @@ class CopyValueConverter {
             return Array.getLength(value);
         }
         return ((Collection<?>) value).size();
-    }
-
-    private static Object element(Object value, int index) {
-        if (value.getClass().isArray()) {
-            return Array.get(value, index);
-        }
-        if (value instanceof List) {
-            return ((List<?>) value).get(index);
-        }
-        int i = 0;
-        for (Object item : (Collection<?>) value) {
-            if (i++ == index) {
-                return item;
-            }
-        }
-        return null;
     }
 
     private static Type elementType(Type type, Object value) {

@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 /**
@@ -46,11 +47,19 @@ public class AsyncFuture<T> extends CompletableFuture<T> {
     public T join() {
         long timeout = scope.getTimeout();
         try {
+            // 正数表示带时限等待，非正数保持无限等待语义
             if (timeout > 0) {
-                return future.join();
+                return future.get(timeout, Optional.ofNullable(scope.getUnit()).orElse(TimeUnit.SECONDS));
             }
-            return future.get(timeout, Optional.ofNullable(scope.getUnit()).orElse(TimeUnit.SECONDS));
+            return future.join();
         } catch (Exception e) {
+            if (e instanceof TimeoutException) {
+                // 超时后取消后续等待，避免调用方已返回但任务继续占用资源
+                future.cancel(true);
+            }
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             if (scope.isReturnNullIfEx()) {
                 return null;
             }

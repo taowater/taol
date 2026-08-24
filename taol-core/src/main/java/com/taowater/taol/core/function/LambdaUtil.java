@@ -1,15 +1,13 @@
 package com.taowater.taol.core.function;
 
-import com.taowater.taol.core.reflect.ClassUtil;
 import lombok.experimental.UtilityClass;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * λ表达式工具类
@@ -25,21 +23,12 @@ public class LambdaUtil {
     /**
      * 类型λ缓存
      */
-    private static final Map<Class<? extends Serializable>, SerializedLambda> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Method> WRITE_REPLACE_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 返回值缓存
      */
-    private static final Map<Serializable, Class<?>> RETURN_CACHE = new ConcurrentHashMap<>();
-
-    /**
-     * 返回类型模式
-     */
-    private static final Pattern RETURN_TYPE_PATTERN = Pattern.compile("\\(.*\\)L(.*);");
-    /**
-     * 参数类型模式
-     */
-    private static final Pattern PARAMETER_TYPE_PATTERN = Pattern.compile("\\((.*)\\).*");
+    private static final Map<Class<?>, Class<?>> RETURN_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 获取方法的lambda实例
@@ -48,25 +37,35 @@ public class LambdaUtil {
      * @return {@link SerializedLambda}
      */
     public static <S extends Serializable> SerializedLambda getSerializedLambda(S fun) {
-
-        return CACHE.computeIfAbsent(fun.getClass(), c -> {
+        if (fun == null) {
+            return null;
+        }
+        Method method = WRITE_REPLACE_CACHE.computeIfAbsent(fun.getClass(), c -> {
             try {
-                Method method = c.getDeclaredMethod("writeReplace");
-                method.setAccessible(true);
-                return (SerializedLambda) method.invoke(fun);
+                Method writeReplace = c.getDeclaredMethod("writeReplace");
+                writeReplace.setAccessible(true);
+                return writeReplace;
             } catch (Exception e) {
                 return null;
             }
         });
+        if (method == null) {
+            return null;
+        }
+        try {
+            // 每次从当前实例提取，避免缓存捕获参数造成对象长期存活或实例信息串用
+            return (SerializedLambda) method.invoke(fun);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static Class<?> getReturnClass(SerializedLambda lambda) {
-        String expr = lambda.getInstantiatedMethodType();
-        Matcher matcher = RETURN_TYPE_PATTERN.matcher(expr);
-        if (!matcher.find() || matcher.groupCount() != 1) {
+        MethodType methodType = getMethodType(lambda);
+        if (methodType == null) {
             return null;
         }
-        return Optional.of(matcher.group(1)).map(e -> e.replace("/", ".")).map(ClassUtil::fromName).orElse(null);
+        return methodType.returnType();
     }
 
     /**
@@ -75,10 +74,10 @@ public class LambdaUtil {
      * @param fun 方法引用
      */
     public static <S extends Serializable> Class<?> getReturnClass(S fun) {
-        return RETURN_CACHE.computeIfAbsent(fun, k -> {
-            SerializedLambda lambda = getSerializedLambda(fun);
-            return getReturnClass(lambda);
-        });
+        if (fun == null) {
+            return null;
+        }
+        return RETURN_CACHE.computeIfAbsent(fun.getClass(), k -> getReturnClass(getSerializedLambda(fun)));
     }
 
 
@@ -115,19 +114,29 @@ public class LambdaUtil {
         if (Objects.isNull(lambda)) {
             return new ArrayList<>(0);
         }
-        String expr = lambda.getInstantiatedMethodType();
-        Matcher matcher = PARAMETER_TYPE_PATTERN.matcher(expr);
-        if (!matcher.find() || matcher.groupCount() != 1) {
+        MethodType methodType = getMethodType(lambda);
+        if (methodType == null) {
             return new ArrayList<>(0);
         }
-        expr = matcher.group(1);
-        String[] parameterNames = expr.split(";");
-        List<Class<?>> parameterTypes = new ArrayList<>(parameterNames.length);
-        for (String parameterName : parameterNames) {
-            String className = parameterName.replace("L", "").replace("/", ".");
-            parameterTypes.add(ClassUtil.fromName(className));
+        return Arrays.asList(methodType.parameterArray());
+    }
+
+    /**
+     * 使用 JVM 方法描述符解析类型，覆盖基本类型、数组和引用类型
+     */
+    private static MethodType getMethodType(SerializedLambda lambda) {
+        if (lambda == null) {
+            return null;
         }
-        return parameterTypes;
+        try {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            if (loader == null) {
+                loader = LambdaUtil.class.getClassLoader();
+            }
+            return MethodType.fromMethodDescriptorString(lambda.getInstantiatedMethodType(), loader);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public static <T, R> List<Class<?>> getParameterTypes(Consumer2<T, R> fun) {

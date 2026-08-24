@@ -14,6 +14,7 @@ import java.util.function.Function;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class LambdaUtilTest {
 
@@ -45,6 +46,23 @@ class LambdaUtilTest {
     @Test
     void getParameterTypesWithNullLambda() {
         assertEquals(Collections.emptyList(), LambdaUtil.getParameterTypes((java.lang.invoke.SerializedLambda) null));
+        assertNull(LambdaUtil.getReturnClass((Function1<String, String>) null));
+    }
+
+    /**
+     * 验证同一 Lambda 类的不同实例不会串用捕获参数
+     */
+    @Test
+    void serializedLambdaKeepsCurrentCapturedArguments() {
+        java.lang.invoke.SerializedLambda first = captured("first");
+        java.lang.invoke.SerializedLambda second = captured("second");
+
+        assertEquals("first", first.getCapturedArg(0));
+        assertEquals("second", second.getCapturedArg(0));
+    }
+
+    private static java.lang.invoke.SerializedLambda captured(String suffix) {
+        return LambdaUtil.getSerializedLambda((Function1<String, String>) value -> value + suffix);
     }
 
     @Getter

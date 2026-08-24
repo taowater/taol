@@ -7,9 +7,14 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AsyncTest {
 
@@ -59,6 +64,29 @@ class AsyncTest {
 
         assertEquals(Arrays.asList(1, "two", null), results);
         assertEquals(0, scope.all().size());
+    }
+
+    /**
+     * 验证正数 timeout 会在任务完成前返回超时结果
+     */
+    @Test
+    void positiveTimeoutReturnsBeforeTaskCompletes() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        try {
+            CompletableFuture<Integer> rawFuture = new CompletableFuture<>();
+            scheduler.schedule(() -> rawFuture.complete(123), 500, TimeUnit.MILLISECONDS);
+            AsyncScope scope = AsyncScope.build()
+                    .returnNullIfEx(true)
+                    .timeout(20)
+                    .unit(TimeUnit.MILLISECONDS)
+                    .build();
+
+            AsyncFuture<Integer> future = AsyncFuture.of(rawFuture, scope);
+
+            assertNull(future.join());
+        } finally {
+            scheduler.shutdownNow();
+        }
     }
 
     public static void sleep(long time) {

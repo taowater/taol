@@ -23,13 +23,15 @@ public class NumberUtil {
     private static final Map<Class<?>, Function<BigDecimal, ?>> TYPE_FUN = new HashMap<>();
 
     static {
-        TYPE_FUN.put(Byte.class, BigDecimal::byteValue);
-        TYPE_FUN.put(Short.class, BigDecimal::shortValue);
-        TYPE_FUN.put(Integer.class, BigDecimal::intValue);
-        TYPE_FUN.put(BigInteger.class, BigDecimal::toBigInteger);
-        TYPE_FUN.put(Long.class, BigDecimal::longValue);
-        TYPE_FUN.put(Float.class, BigDecimal::floatValue);
-        TYPE_FUN.put(Double.class, BigDecimal::doubleValue);
+        TYPE_FUN.put(Byte.class, BigDecimal::byteValueExact);
+        TYPE_FUN.put(Short.class, BigDecimal::shortValueExact);
+        TYPE_FUN.put(Integer.class, BigDecimal::intValueExact);
+        TYPE_FUN.put(BigInteger.class, BigDecimal::toBigIntegerExact);
+        TYPE_FUN.put(Long.class, BigDecimal::longValueExact);
+        TYPE_FUN.put(Float.class, NumberUtil::toFiniteFloat);
+        TYPE_FUN.put(Double.class, NumberUtil::toFiniteDouble);
+        TYPE_FUN.put(BigDecimal.class, Function.identity());
+        TYPE_FUN.put(Number.class, Function.identity());
     }
 
     /**
@@ -45,8 +47,33 @@ public class NumberUtil {
             return null;
         }
         Class<? extends N> returnClass = LambdaUtil.getReturnClass(function);
-        Function<BigDecimal, N> fun = (Function<BigDecimal, N>) TYPE_FUN.getOrDefault(returnClass, Function.identity());
-        return fun.apply(bigDecimal);
+        Function<BigDecimal, ?> converter = TYPE_FUN.get(returnClass);
+        if (converter == null) {
+            throw new IllegalArgumentException("unsupported numeric return type: " + returnClass);
+        }
+        return (N) converter.apply(bigDecimal);
+    }
+
+    /**
+     * 转换为有限 float，溢出时保持与 Bean 转换一致的失败语义
+     */
+    private static Float toFiniteFloat(BigDecimal value) {
+        float result = value.floatValue();
+        if (Float.isInfinite(result)) {
+            throw new ArithmeticException("numeric value overflows float: " + value);
+        }
+        return result;
+    }
+
+    /**
+     * 转换为有限 double，溢出时保持与 Bean 转换一致的失败语义
+     */
+    private static Double toFiniteDouble(BigDecimal value) {
+        double result = value.doubleValue();
+        if (Double.isInfinite(result)) {
+            throw new ArithmeticException("numeric value overflows double: " + value);
+        }
+        return result;
     }
 
     public static BigDecimal toBigDecimal(Number number) {

@@ -14,6 +14,7 @@ import com.test.bean.bench.NumericBenchSource;
 import com.test.bean.bench.NumericBenchTarget;
 import com.test.benchmark.BenchBeanFactory;
 import com.test.benchmark.CopyBenchmark;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
 
@@ -37,6 +38,7 @@ class ConvertTest {
     }
 
     @Test
+    @Tag("benchmark")
     void benchmarkFlatBean() {
         Bean1 source = BenchBeanFactory.flatSource();
         Bean2 target = new Bean2();
@@ -58,6 +60,7 @@ class ConvertTest {
     }
 
     @Test
+    @Tag("benchmark")
     void benchmarkNumericBean() {
         NumericBenchSource source = BenchBeanFactory.numericSource();
         NumericBenchTarget target = new NumericBenchTarget();
@@ -85,6 +88,7 @@ class ConvertTest {
     }
 
     @Test
+    @Tag("benchmark")
     void benchmarkCollectionBean() {
         CollectionBenchSource source = BenchBeanFactory.collectionSource();
         CollectionBenchTarget target = new CollectionBenchTarget();
