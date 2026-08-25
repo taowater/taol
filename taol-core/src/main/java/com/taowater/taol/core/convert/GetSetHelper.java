@@ -151,7 +151,6 @@ public class GetSetHelper {
             MethodHandleHelper.MethodAccess access = MethodHandleHelper.access(method);
             MethodHandle handle = access.getHandle();
             if (!handle.type().equals(MethodType.methodType(method.getReturnType(), targetClass, paramType))) {
-                method.setAccessible(true);
                 handle = access.getLookup().findVirtual(targetClass, method.getName(), methodType);
             }
             CallSite callSite = LambdaMetafactory.metafactory(

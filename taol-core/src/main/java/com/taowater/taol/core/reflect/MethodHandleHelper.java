@@ -7,52 +7,59 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 /**
- * MethodHandle 反射工具，兼容非 public 声明类（如包级私有 Bean）
+ * MethodHandle 反射工具，优先使用标准 Lookup 兼容非 public 声明类
  */
 @UtilityClass
 public class MethodHandleHelper {
 
     private static final int TRUSTED = -1;
     private static final int FULL_POWER = 31;
-    private static final Constructor<MethodHandles.Lookup> LOOKUP_CONSTRUCTOR;
-    private static final MethodHandles.Lookup IMPL_LOOKUP;
+
     /**
-     * JDK9+ 的 {@code MethodHandles.privateLookupIn(Class, Lookup)}；用反射持有以保持 Java 8 源码/运行兼容。
-     * 对 classpath（unnamed module）上的类无需 {@code --add-opens} 即可获得私有访问。
+     * JDK9+ 的标准私有 Lookup 入口，通过反射持有以保持 Java 8 编译兼容
      */
     private static final Method PRIVATE_LOOKUP_IN;
+    /**
+     * Java 8 Lookup 构造器缓存
+     */
+    private static final Constructor<MethodHandles.Lookup> LOOKUP_CONSTRUCTOR;
+    /**
+     * Java 8 内部 Lookup 实例缓存
+     */
+    private static final MethodHandles.Lookup IMPL_LOOKUP;
 
     static {
-        Constructor<MethodHandles.Lookup> constructor = null;
-        try {
-            constructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
-            constructor.setAccessible(true);
-        } catch (Throwable ignored) {
-            // JDK16+ 强封装下 setAccessible 会抛 InaccessibleObjectException（RuntimeException），
-            // 静态初始化必须兜住任何异常，置空后由 privilegedLookup 降级到公有 Lookup，切勿让类初始化失败。
-            constructor = null;
-        }
-        LOOKUP_CONSTRUCTOR = constructor;
-
+        Method privateLookupIn = null;
+        Constructor<MethodHandles.Lookup> lookupConstructor = null;
         MethodHandles.Lookup implLookup = null;
         try {
-            Field field = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
-            field.setAccessible(true);
-            implLookup = (MethodHandles.Lookup) field.get(null);
-        } catch (Throwable ignored) {
-        }
-        IMPL_LOOKUP = implLookup;
-
-        Method privateLookupIn = null;
-        try {
             privateLookupIn = MethodHandles.class.getMethod("privateLookupIn", Class.class, MethodHandles.Lookup.class);
-        } catch (Throwable ignored) {
+        } catch (NoSuchMethodException ignored) {
+            // Java 8 不提供标准私有 Lookup
+        }
+        if (privateLookupIn == null) {
+            try {
+                lookupConstructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
+                lookupConstructor.setAccessible(true);
+            } catch (Throwable ignored) {
+                // 当前 JVM 不允许访问 Lookup 构造器时继续尝试字段 fallback
+            }
+            try {
+                Field field = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
+                field.setAccessible(true);
+                implLookup = (MethodHandles.Lookup) field.get(null);
+            } catch (Throwable ignored) {
+                // 当前 JVM 不允许访问内部 Lookup 时保留空缓存
+            }
         }
         PRIVATE_LOOKUP_IN = privateLookupIn;
+        LOOKUP_CONSTRUCTOR = lookupConstructor;
+        IMPL_LOOKUP = implLookup;
     }
 
     @Getter
@@ -79,10 +86,9 @@ public class MethodHandleHelper {
 
     public static <T> ConstructorAccess access(Constructor<T> constructor) {
         try {
-            constructor.setAccessible(true);
-            MethodHandles.Lookup lookup = privilegedLookup(constructor.getDeclaringClass());
+            MethodHandles.Lookup lookup = standardLookup(constructor.getDeclaringClass(), constructor.getModifiers());
             return new ConstructorAccess(lookup, lookup.unreflectConstructor(constructor));
-        } catch (ReflectiveOperationException e) {
+        } catch (ReflectiveOperationException | SecurityException e) {
             throw new IllegalStateException("cannot access constructor: " + constructor, e);
         }
     }
@@ -92,10 +98,9 @@ public class MethodHandleHelper {
      */
     public static MethodAccess access(Method method) {
         try {
-            method.setAccessible(true);
-            MethodHandles.Lookup lookup = privilegedLookup(method.getDeclaringClass());
+            MethodHandles.Lookup lookup = standardLookup(method.getDeclaringClass(), method.getModifiers());
             return new MethodAccess(lookup, lookup.unreflect(method));
-        } catch (ReflectiveOperationException e) {
+        } catch (ReflectiveOperationException | SecurityException e) {
             throw new IllegalStateException("cannot access method: " + method, e);
         }
     }
@@ -104,33 +109,59 @@ public class MethodHandleHelper {
         return access(method).getHandle();
     }
 
-    private static MethodHandles.Lookup privilegedLookup(Class<?> clazz) throws ReflectiveOperationException {
+    /**
+     * 仅通过标准 API 获取目标类 Lookup，不绕过模块与访问边界
+     */
+    private static MethodHandles.Lookup standardLookup(Class<?> clazz, int memberModifiers)
+            throws ReflectiveOperationException {
+        if (PRIVATE_LOOKUP_IN != null) {
+            try {
+                return (MethodHandles.Lookup) PRIVATE_LOOKUP_IN.invoke(null, clazz, MethodHandles.lookup());
+            } catch (InvocationTargetException e) {
+                if (isPublicMember(clazz, memberModifiers)) {
+                    return MethodHandles.lookup();
+                }
+                throw inaccessibleLookup(clazz, e.getCause());
+            }
+        }
+        if (isPublicMember(clazz, memberModifiers)) {
+            return MethodHandles.lookup();
+        }
+        // Java 8 没有 privateLookupIn，只能使用兼容旧运行时的受控 fallback
+        return java8CompatibleLookup(clazz);
+    }
+
+    private static MethodHandles.Lookup java8CompatibleLookup(Class<?> clazz)
+            throws ReflectiveOperationException {
         if (LOOKUP_CONSTRUCTOR != null) {
             try {
                 return LOOKUP_CONSTRUCTOR.newInstance(clazz, TRUSTED);
             } catch (ReflectiveOperationException ignored) {
-                // try FULL_POWER for OpenJ9 等 JVM
+                // 部分 JVM 不接受 trusted 权限值，尝试兼容的 full-power 值
             }
-            return LOOKUP_CONSTRUCTOR.newInstance(clazz, FULL_POWER);
+            try {
+                return LOOKUP_CONSTRUCTOR.newInstance(clazz, FULL_POWER);
+            } catch (ReflectiveOperationException ignored) {
+                // 当前 JVM 不接受兼容的 Lookup 权限值，继续尝试字段 fallback
+            }
         }
+
         if (IMPL_LOOKUP != null) {
-            try {
-                return IMPL_LOOKUP.in(clazz);
-            } catch (Exception ignored) {
-                // fall through
-            }
+            return IMPL_LOOKUP.in(clazz);
         }
-        // JDK9+：对 classpath（unnamed module）类无需 --add-opens 即可获得含私有权限的 Lookup。
-        if (PRIVATE_LOOKUP_IN != null) {
-            try {
-                return (MethodHandles.Lookup) PRIVATE_LOOKUP_IN.invoke(null, clazz, MethodHandles.lookup());
-            } catch (Throwable ignored) {
-                // 目标类所在模块未对本模块开放等情况，继续降级。
-            }
+        throw new IllegalAccessException("cannot create Java 8 compatible lookup for class: " + clazz.getName());
+    }
+
+    private static boolean isPublicMember(Class<?> clazz, int memberModifiers) {
+        return Modifier.isPublic(clazz.getModifiers()) && Modifier.isPublic(memberModifiers);
+    }
+
+    private static IllegalAccessException inaccessibleLookup(Class<?> clazz, Throwable cause) {
+        IllegalAccessException exception = new IllegalAccessException(
+                "cannot create standard private lookup for class: " + clazz.getName());
+        if (cause != null) {
+            exception.initCause(cause);
         }
-        if (Modifier.isPublic(clazz.getModifiers())) {
-            return MethodHandles.lookup().in(clazz);
-        }
-        throw new IllegalAccessException("cannot create privileged lookup for class: " + clazz.getName());
+        return exception;
     }
 }

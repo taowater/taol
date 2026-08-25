@@ -6,11 +6,15 @@ import com.taowater.taol.core.reflect.ClassUtil;
 import com.taowater.taol.core.reflect.MethodHandleHelper;
 import lombok.Getter;
 import lombok.Setter;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
@@ -20,10 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * {@link MethodHandleHelper} 及依赖它的 {@link ClassUtil}/{@link GetSetHelper} 回归。
  * <p>
- * 用例刻意覆盖「跨包 + 包级私有类 + 私有成员」：Helper 位于
- * {@code com.taowater.taol.core.reflect}，夹具在 {@code com.taowater.core.reflect}，
- * 验证 JDK16+ 强封装下静态初始化不会因 {@code IMPL_LOOKUP.setAccessible} 失败而崩，
- * 并能通过 {@code privateLookupIn} 等路径完成特权 Lookup。
+ * 用例覆盖跨包非公开 Bean，并验证标准 Lookup 不会越过 JDK 模块边界
  */
 class MethodHandleHelperTest {
 
@@ -71,6 +72,44 @@ class MethodHandleHelperTest {
         PackagePrivateBean bean = new PackagePrivateBean();
         bean.setAge(7);
         assertEquals((int) fromAccess.invoke(bean), (int) fromUnreflect.invoke(bean));
+    }
+
+    @Test
+    void accessJdkPrivateMethod_respectsModuleBoundary() {
+        // Java 8 没有模块边界，兼容 fallback 的行为不适用本断言
+        Assumptions.assumeTrue(hasPrivateLookupIn(), "仅在 Java 9+ 验证模块边界");
+
+        // 未开放的 JDK 模块私有成员必须拒绝访问
+        Method privateMethod = Arrays.stream(String.class.getDeclaredMethods())
+                .filter(method -> Modifier.isPrivate(method.getModifiers()))
+                .findFirst()
+                .orElseThrow(AssertionError::new);
+
+        try {
+            MethodHandleHelper.access(privateMethod);
+            // 若通过 --add-opens 开放了 java.lang，本断言不适用
+            Assumptions.assumeTrue(false, "java.lang 已通过启动参数开放");
+        } catch (IllegalStateException expected) {
+            // 未开放模块时必须拒绝访问
+        }
+    }
+
+    // 判断当前运行时是否提供标准私有 Lookup API
+    private static boolean hasPrivateLookupIn() {
+        try {
+            MethodHandles.class.getMethod("privateLookupIn", Class.class, MethodHandles.Lookup.class);
+            return true;
+        } catch (NoSuchMethodException ignored) {
+            return false;
+        }
+    }
+
+    @Test
+    void accessJdkPublicMethod_usesStandardPublicLookup() throws Throwable {
+        Method length = String.class.getMethod("length");
+        MethodHandleHelper.MethodAccess access = MethodHandleHelper.access(length);
+
+        assertEquals(4, (int) access.getHandle().invoke("taol"));
     }
 
     // ------------------------------------------------------------------ access(Constructor)
